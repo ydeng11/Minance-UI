@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import {CaretSortIcon, ChevronDownIcon, DotsHorizontalIcon,} from "@radix-ui/react-icons"
 import {
     ColumnDef,
     ColumnFiltersState,
@@ -13,7 +14,6 @@ import {
     useReactTable,
     VisibilityState,
 } from "@tanstack/react-table"
-import {ArrowUpDown, ChevronDown, MoreHorizontal} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
 import {Checkbox} from "@/components/ui/checkbox"
@@ -108,7 +108,7 @@ export const columns: ColumnDef<Payment>[] = [
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
                     Email
-                    <ArrowUpDown className="ml-2 h-4 w-4"/>
+                    <CaretSortIcon className="ml-2 h-4 w-4"/>
                 </Button>
             )
         },
@@ -140,7 +140,7 @@ export const columns: ColumnDef<Payment>[] = [
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
                             <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4"/>
+                            <DotsHorizontalIcon className="h-4 w-4"/>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -160,7 +160,7 @@ export const columns: ColumnDef<Payment>[] = [
     },
 ]
 
-export function DataTableDemo() {
+export function ExpenseTable() {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
         []
@@ -202,7 +202,7 @@ export function DataTableDemo() {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-auto">
-                            Columns <ChevronDown className="ml-2 h-4 w-4"/>
+                            Columns <ChevronDownIcon className="ml-2 h-4 w-4"/>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
