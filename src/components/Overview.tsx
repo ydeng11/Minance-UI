@@ -1,5 +1,6 @@
-import BarChartComponent from "@/components/visualization/barChartComponent";
-import {ExpenseTable} from "@/components/visualization/expenseTable";
+import BarChartComponent from "@/components/visualization/BarChartComponent.tsx";
+import {ExpenseTable} from "@/components/visualization/ExpenseTable.tsx";
+
 
 const Overview = () => {
     return (

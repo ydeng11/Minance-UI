@@ -1,10 +1,10 @@
 // Header.tsx
 import React from 'react';
 import {NavLink} from 'react-router-dom';
-import ImportTransactions from "@/components/utils/importTransactionModal";
 import 'react-datepicker/dist/react-datepicker.css'; // Basic styles
 // Custom styles for the date picker
 import {DateRangePicker} from "@/components/utils/datePicker/date-range-picker.tsx";
+import ImportTransactions from "@/components/utils/ImportTransactionModal.tsx";
 
 const Header: React.FC = () => {
     return (

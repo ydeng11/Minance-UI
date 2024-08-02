@@ -1,4 +1,3 @@
-// ImportTransactionsModal.tsx
 import React, {useState} from 'react';
 import {Dialog, DialogContent, DialogOverlay, DialogTrigger} from '@/components/ui/dialog';
 import {Button} from "@/components/ui/button.tsx";

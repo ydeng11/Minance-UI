@@ -1,9 +1,10 @@
 import React from 'react';
 import {Route, Routes} from "react-router-dom";
-import Header from "@/components/header";
-import Overview from "@/components/overview";
 import Analytics from "@/components/analytics";
-import Settings from "@/components/settings";
+import Settings from "@/components/settings/Settings.tsx";
+import CatGroupingComponent from "@/components/settings/CatGroupingComponent.tsx";
+import Overview from "@/components/Overview.tsx";
+import Header from "@/components/Header.tsx";
 
 const Layout: React.FC = () => {
     return (
@@ -13,7 +14,10 @@ const Layout: React.FC = () => {
                 <Routes>
                     <Route path="/overview" element={<Overview/>}/>
                     <Route path="/analytics" element={<Analytics/>}/>
-                    <Route path="/settings" element={<Settings/>}/>
+                    <Route path="/settings" element={<Settings/>}>
+                        <Route path="" element={<CatGroupingComponent/>}/>
+                        <Route path="cat-grouping" element={<CatGroupingComponent/>}/>
+                    </Route>
                     <Route path="/" element={<Overview/>}/>
                 </Routes>
             </main>
