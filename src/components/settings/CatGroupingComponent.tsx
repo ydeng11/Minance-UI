@@ -10,7 +10,7 @@ function CatGroupingComponent() {
                     <main className="mx-4 flex flex-col gap-6">
                         <div className="flex items-center justify-center h-full">
                             <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-center">
-                                Cat Mapping
+                                Cat Grouping
                             </h1>
                         </div>
                         <BoardComponent/>

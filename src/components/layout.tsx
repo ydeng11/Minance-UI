@@ -5,6 +5,7 @@ import Settings from "@/components/settings/Settings.tsx";
 import CatGroupingComponent from "@/components/settings/CatGroupingComponent.tsx";
 import Overview from "@/components/Overview.tsx";
 import Header from "@/components/Header.tsx";
+import {AccountManager} from "@/components/settings/AccountManager.tsx";
 
 const Layout: React.FC = () => {
     return (
@@ -17,6 +18,7 @@ const Layout: React.FC = () => {
                     <Route path="/settings" element={<Settings/>}>
                         <Route path="" element={<CatGroupingComponent/>}/>
                         <Route path="cat-grouping" element={<CatGroupingComponent/>}/>
+                        <Route path="new-bank-account" element={<AccountManager/>}/>
                     </Route>
                     <Route path="/" element={<Overview/>}/>
                 </Routes>

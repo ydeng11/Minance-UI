@@ -35,7 +35,7 @@ const Header: React.FC = () => {
                     showCompare={false}
                 />
                 <ImportTransactions/>
-                <img src="path-to-avatar" alt="User Avatar" className="w-10 h-10 rounded-full"/>
+                {/*<img src="path-to-avatar" alt="User Avatar" className="w-10 h-10 rounded-full"/>*/}
             </div>
         </header>
     );
