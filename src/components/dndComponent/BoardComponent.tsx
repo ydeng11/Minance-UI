@@ -1,6 +1,5 @@
-import {useMemo, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {createPortal} from "react-dom";
-
 import {BoardColumn, BoardContainer, Column} from "./BoardColumn";
 import {
     Announcements,
@@ -20,6 +19,13 @@ import {arrayMove, SortableContext} from "@dnd-kit/sortable";
 import {type Task, TaskCard} from "./TaskCard";
 import {hasDraggableData} from "./utils";
 import {coordinateGetter} from "./multipleContainersKeyboardPreset";
+import {AddCategoryDialog} from "./AddCategoryDialog";
+import {useCategoryStore} from '@/store/categoryStore';
+import {Button} from "@/components/ui/button";
+import {useCategoryGroupQuery} from "@/services/queries/useCategoryGroupQuery";
+import {useCategoryGroupMutation} from "@/services/queries/useCategoryGroupMutation";
+import {toast} from "@/hooks/use-toast";
+import {CategoryMapping} from "@/services/apis/categoryMappingApis.tsx";
 
 const defaultCols = [
     {
@@ -34,69 +40,20 @@ const defaultCols = [
 
 export type ColumnId = (typeof defaultCols)[number]["id"];
 
-const initialTasks: Task[] = [
-    {
-        id: "task1",
-        columnId: "originalCat",
-        content: "Project initiation and planning",
-    },
-    {
-        id: "task2",
-        columnId: "originalCat",
-        content: "Gather requirements from stakeholders",
-    },
-    {
-        id: "task3",
-        columnId: "originalCat",
-        content: "Create wireframes and mockups",
-    },
-    {
-        id: "task6",
-        columnId: "originalCat",
-        content: "Implement user authentication",
-    },
-    {
-        id: "task7",
-        columnId: "originalCat",
-        content: "Build contact us page",
-    },
-    {
-        id: "task8",
-        columnId: "minanceCat",
-        content: "Create product catalog",
-    },
-    {
-        id: "task9",
-        columnId: "minanceCat",
-        content: "Develop about us page",
-    },
-    {
-        id: "task10",
-        columnId: "minanceCat",
-        content: "Optimize website for mobile devices",
-    },
-    {
-        id: "task11",
-        columnId: "minanceCat",
-        content: "Integrate payment gateway",
-    },
-    {
-        id: "task12",
-        columnId: "minanceCat",
-        content: "Perform testing and bug fixing",
-    }
-];
-
 export function BoardComponent() {
     const [columns, setColumns] = useState<Column[]>(defaultCols);
-    const pickedUpTaskColumn = useRef<ColumnId | null>(null);
-    const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
-
-    const [tasks, setTasks] = useState<Task[]>(initialTasks);
-
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [activeColumn, setActiveColumn] = useState<Column | null>(null);
-
     const [activeTask, setActiveTask] = useState<Task | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const pickedUpTaskColumn = useRef<ColumnId | null>(null);
+
+    const {selectedCategory, setMinanceCategories, setSelectedCategory} = useCategoryStore();
+    const {
+        updateCategoryGroupMutation,
+        deleteCategoryGroupMutation
+    } = useCategoryGroupMutation();
+    const {unlinkedCategories, linkedCategories, allMinanceCategories} = useCategoryGroupQuery(selectedCategory);
 
     const sensors = useSensors(
         useSensor(MouseSensor),
@@ -106,9 +63,91 @@ export function BoardComponent() {
         })
     );
 
-    const categories = ["shopping", "dinner", "entertainment", "work", "personal"];
+    // Load initial data
+    useEffect(() => {
+        if (allMinanceCategories.data) {
+            setMinanceCategories(allMinanceCategories.data);
+            // If no category is selected, select the first one
+            if (!selectedCategory && allMinanceCategories.data.length > 0) {
+                setSelectedCategory(allMinanceCategories.data[0].category);
+            }
+        }
+    }, [allMinanceCategories.data, selectedCategory, setMinanceCategories, setSelectedCategory]);
+
+    // Update tasks when unlinked categories change
+    useEffect(() => {
+        if (unlinkedCategories.data) {
+            const unlinkedTasks: Task[] = unlinkedCategories.data.map((cat) => ({
+                id: cat.name,
+                content: cat.name,
+                columnId: "originalCat" as const
+            }));
+            setTasks(unlinkedTasks);
+        }
+    }, [unlinkedCategories.data]);
+
+    // Update tasks when linked categories change
+    useEffect(() => {
+        if (linkedCategories.data) {
+            const linkedTasks: Task[] = linkedCategories.data.map((cat) => ({
+                id: cat.name,
+                content: cat.name,
+                columnId: "minanceCat" as const
+            }));
+            setTasks(prev => {
+                const unlinkedTasks = prev.filter(task => task.columnId === "originalCat");
+                return [...unlinkedTasks, ...linkedTasks];
+            });
+        }
+    }, [linkedCategories.data]);
+
+    const handleSaveCategory = () => {
+        if (!selectedCategory) {
+            toast({
+                title: "Error",
+                description: "Please select a category first",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        const tasksInMinanceCat = tasks.filter(task => task.columnId === "minanceCat");
+        const categoryMapping: CategoryMapping = {
+            listRawCategories: tasksInMinanceCat.map(task => task.id.toString()),
+            minanceCategory: selectedCategory
+        };
+
+        updateCategoryGroupMutation(categoryMapping);
+    };
+
+
+    const handleDeleteCategory = () => {
+        if (!selectedCategory) {
+            toast({
+                title: "Error",
+                description: "Please select a category first",
+                variant: "destructive",
+            });
+            return;
+        }
+        deleteCategoryGroupMutation({
+            MCategoryId: allMinanceCategories.data?.find(cat => cat.category === selectedCategory)?.MCategoryId || '',
+            category: selectedCategory
+        });
+    }
 
     function boardTitle(category: string) {
+
+
+        const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+            const value = e.target.value;
+            if (value === "add-new") {
+                setIsDialogOpen(true);
+            } else {
+                setSelectedCategory(value);
+            }
+        };
+
         if (category === "originalCat") {
             return (
                 <div className="flex justify-center mb-2 w-full max-w-md">
@@ -117,16 +156,30 @@ export function BoardComponent() {
             );
         } else {
             return (
-                <div className="flex justify-center mb-2 w-full max-w-md">
-                    <select className="border p-2 rounded bg-gray-700 text-white text-xl w-full text-center">
-                        <option value="" selected disabled>Minance Cat</option>
-                        {categories.map((cat) => (
-                            <option key={cat} value={cat} className="bg-gray-800 text-xl">
-                                {cat}
+                <>
+                    <div className="flex justify-center mb-2 w-full max-w-md">
+                        <select
+                            className="border p-2 rounded bg-card text-gray-500 text-xl w-full text-center"
+                            value={selectedCategory}
+                            onChange={handleCategoryChange}
+                        >
+                            <option value="" disabled>Minance Cat</option>
+                            {allMinanceCategories.data?.map((cat) => (
+                                <option key={cat.MCategoryId} value={cat.category} className="bg-gray-800 text-xl">
+                                    {cat.category}
+                                </option>
+                            ))}
+                            <option value="add-new" className="bg-gray-800 text-xl">
+                                Add New
                             </option>
-                        ))}
-                    </select>
-                </div>
+                        </select>
+                    </div>
+
+                    <AddCategoryDialog
+                        open={isDialogOpen}
+                        onOpenChange={setIsDialogOpen}
+                    />
+                </>
             );
         }
     }
@@ -146,11 +199,11 @@ export function BoardComponent() {
         onDragStart({active}) {
             if (!hasDraggableData(active)) return;
             if (active.data.current?.type === "Column") {
-                const startColumnIdx = columnsId.findIndex((id) => id === active.id);
+                const startColumnIdx = columns.findIndex((col) => col.id === active.id);
                 const startColumn = columns[startColumnIdx];
                 return `Picked up Column ${startColumn?.title} at position: ${
                     startColumnIdx + 1
-                } of ${columnsId.length}`;
+                } of ${columns.length}`;
             } else if (active.data.current?.type === "Task") {
                 pickedUpTaskColumn.current = active.data.current.task.columnId;
                 const {tasksInColumn, taskPosition, column} = getDraggingTaskData(
@@ -171,10 +224,10 @@ export function BoardComponent() {
                 active.data.current?.type === "Column" &&
                 over.data.current?.type === "Column"
             ) {
-                const overColumnIdx = columnsId.findIndex((id) => id === over.id);
+                const overColumnIdx = columns.findIndex((col) => col.id === over.id);
                 return `Column ${active.data.current.column.title} was moved over ${
                     over.data.current.column.title
-                } at position ${overColumnIdx + 1} of ${columnsId.length}`;
+                } at position ${overColumnIdx + 1} of ${columns.length}`;
             } else if (
                 active.data.current?.type === "Task" &&
                 over.data.current?.type === "Task"
@@ -204,12 +257,12 @@ export function BoardComponent() {
                 active.data.current?.type === "Column" &&
                 over.data.current?.type === "Column"
             ) {
-                const overColumnPosition = columnsId.findIndex((id) => id === over.id);
+                const overColumnPosition = columns.findIndex((col) => col.id === over.id);
 
                 return `Column ${
                     active.data.current.column.title
                 } was dropped into position ${overColumnPosition + 1} of ${
-                    columnsId.length
+                    columns.length
                 }`;
             } else if (
                 active.data.current?.type === "Task" &&
@@ -248,14 +301,34 @@ export function BoardComponent() {
             onDragOver={onDragOver}
         >
             <BoardContainer>
-                <SortableContext items={columnsId}>
+                <SortableContext items={columns}>
                     {columns.map((col) => (
-                        <div key={col.id}>
+                        <div key={col.id} className="flex flex-col">
                             {boardTitle(col.id.toString())}
                             <BoardColumn
                                 column={col}
                                 tasks={tasks.filter((task) => task.columnId === col.id)}
                             />
+                            {col.id === "minanceCat" ? (
+                                <div className="flex gap-2 justify-center mt-4 mb-2">
+                                    <Button
+                                        onClick={handleSaveCategory}
+                                        variant="secondary"
+                                        className="w-24"
+                                    >
+                                        Save
+                                    </Button>
+                                    <Button
+                                        onClick={handleDeleteCategory}
+                                        variant="destructive"
+                                        className="w-24"
+                                    >
+                                        Delete
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="mt-4 mb-2 h-[36px]"/>
+                            )}
                         </div>
                     ))}
                 </SortableContext>
@@ -278,6 +351,7 @@ export function BoardComponent() {
                     document.body
                 )}
         </DndContext>
+
     );
 
     function onDragStart(event: DragStartEvent) {
@@ -294,7 +368,7 @@ export function BoardComponent() {
         }
     }
 
-    function onDragEnd(event: DragEndEvent) {
+    async function onDragEnd(event: DragEndEvent) {
         setActiveColumn(null);
         setActiveTask(null);
 
@@ -310,16 +384,26 @@ export function BoardComponent() {
 
         if (activeId === overId) return;
 
+        if (activeData?.type === "Task") {
+            const task = tasks.find(t => t.id === activeId);
+            if (task && task.columnId === "originalCat" && over.data.current?.type === "Column" && over.id === "minanceCat") {
+                const categoryName = task.content.split(" (")[0];
+                const categoryMapping: CategoryMapping = {
+                    listRawCategories: [categoryName],
+                    minanceCategory: selectedCategory
+                };
+                updateCategoryGroupMutation(categoryMapping);
+            }
+        }
+
         const isActiveAColumn = activeData?.type === "Column";
-        if (!isActiveAColumn) return;
-
-        setColumns((columns) => {
-            const activeColumnIndex = columns.findIndex((col) => col.id === activeId);
-
-            const overColumnIndex = columns.findIndex((col) => col.id === overId);
-
-            return arrayMove(columns, activeColumnIndex, overColumnIndex);
-        });
+        if (isActiveAColumn) {
+            setColumns((columns) => {
+                const activeColumnIndex = columns.findIndex((col) => col.id === activeId);
+                const overColumnIndex = columns.findIndex((col) => col.id === overId);
+                return arrayMove(columns, activeColumnIndex, overColumnIndex);
+            });
+        }
     }
 
     function onDragOver(event: DragOverEvent) {

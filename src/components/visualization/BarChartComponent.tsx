@@ -1,41 +1,110 @@
 // BarChartComponent.tsx
-import React from 'react';
-import {BarChart} from '@tremor/react';
-
-const data = [
-    {month: 'Jan', value: 4500},
-    {month: 'Feb', value: 3200},
-    {month: 'Mar', value: 4100},
-    {month: 'Apr', value: 1800},
-    {month: 'May', value: 6000},
-    {month: 'Jun', value: 5800},
-    {month: 'Jul', value: 1200},
-    {month: 'Aug', value: 4300},
-    {month: 'Sep', value: 2400},
-    {month: 'Oct', value: 3600},
-    {month: 'Nov', value: 2200},
-    {month: 'Dec', value: 5000},
-];
+import React, {useCallback, useEffect, useState} from 'react';
+import {BarChart} from "@/components/analytics/BarChart.tsx";
+import {useTransactionStore} from '@/store/transactionStore';
+import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group.tsx";
+import {Label} from "@/components/ui/label.tsx";
+import {MultiSelect} from "@/components/ui/multi-select";
 
 const BarChartComponent: React.FC = () => {
+    const {transactions} = useTransactionStore();
+    const [categories, setCategories] = useState<string[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [chartData, setChartData] = useState<Record<string, any>[]>([]);
+    const [chartType, setChartType] = useState("stacked");
+    const [hasSetInitialState, setHasSetInitialState] = useState(false);
+
+    useEffect(() => {
+        const uniqueCategories = Array.from(
+            new Set(transactions.map(t => t.category || 'Uncategorized'))
+        );
+        setCategories(uniqueCategories);
+        setSelectedCategories(uniqueCategories);
+        setHasSetInitialState(true);
+    }, [transactions]);
+
+    const processTransactionData = useCallback(() => {
+        const monthlyData = transactions.reduce((acc, transaction) => {
+            const date = new Date(transaction.transactionDate);
+            const monthYear = date.toLocaleString('default', {month: 'short', year: '2-digit'});
+
+            if (!acc[monthYear]) {
+                acc[monthYear] = {};
+            }
+
+            const category = transaction.category || 'Uncategorized';
+            acc[monthYear][category] = (acc[monthYear][category] || 0) + transaction.amount;
+
+            return acc;
+        }, {} as Record<string, Record<string, number>>);
+
+        return Object.entries(monthlyData).map(([date, categories]) => ({
+            date,
+            ...categories
+        }));
+    }, [transactions]);
+
+    useEffect(() => {
+        const data = processTransactionData();
+        setChartData(data);
+    }, [transactions, processTransactionData]);
+
     const dataFormatter = (number: number) =>
-        Intl.NumberFormat('us').format(number).toString();
+        Intl.NumberFormat('us', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(number);
+
+    const categoryOptions = categories.map(category => ({
+        label: category,
+        value: category,
+    }));
 
     return (
-        <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <BarChart
-                className="mt-6"
-                data={data}
-                index="month"           // The key in the data to use for x-axis labels
-                categories={['value']} // The data fields to use for the bar heights
-                colors={['blue']}   // Customize bar colors
-                valueFormatter={dataFormatter} // Format values
-                showXAxis={true}       // Show or hide the X axis
-                showYAxis={true}       // Show or hide the Y axis
-                showGridLines={true}   // Show or hide grid lines
-                showLegend={false}
-                onValueChange={(v) => console.log(v)}
-            />
+        <div>
+            <div className="flex items-center justify-between mb-4">
+                <RadioGroup
+                    defaultValue="stacked"
+                    className="flex space-x-4"
+                    onValueChange={setChartType}
+                >
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="percent" id="percent"/>
+                        <Label htmlFor="percent" className="text-gray-900 font-medium">Use Percentage</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="stacked" id="stacked"/>
+                        <Label htmlFor="stacked" className="text-gray-900 font-medium">Use Stack</Label>
+                    </div>
+                </RadioGroup>
+
+                {hasSetInitialState && (
+                    <MultiSelect
+                        options={categoryOptions}
+                        onValueChange={setSelectedCategories}
+                        defaultValue={selectedCategories}
+                        placeholder="Select categories"
+                        variant="inverted"
+                        animation={2}
+                        maxCount={5}
+                    />
+                )}
+            </div>
+            <div className="bg-gray-100 pt-4 rounded-lg shadow-lg">
+                <BarChart
+                    data={chartData}
+                    type={chartType as "default" | "percent" | "stacked" | undefined}
+                    index="date"
+                    className="h-52"
+                    categories={selectedCategories}
+                    valueFormatter={dataFormatter}
+                    showXAxis={true}
+                    showYAxis={true}
+                    yAxisWidth={100}
+                    showGridLines={true}
+                    showLegend={true}
+                />
+            </div>
         </div>
     );
 };
