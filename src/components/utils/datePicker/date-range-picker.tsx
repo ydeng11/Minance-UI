@@ -11,6 +11,8 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from './s
 import {Switch} from './switch'
 import {CheckIcon, ChevronDownIcon, ChevronUpIcon} from '@radix-ui/react-icons'
 import {cn} from '@/lib/utils'
+import { DEFAULT_START_DATE, DEFAULT_END_DATE } from '@/store/dateRangeStore'
+import { useDateRangeQuery } from "@/services/queries/useDateRangeQuery";
 
 export interface DateRangePickerProps {
     /** Click handler for applying the updates from DateRangePicker. */
@@ -80,8 +82,8 @@ const PRESETS: Preset[] = [
 export const DateRangePicker: FC<DateRangePickerProps> & {
     filePath: string
 } = ({
-         initialDateFrom = new Date(new Date().setHours(0, 0, 0, 0)),
-         initialDateTo,
+         initialDateFrom = getDateAdjustedForTimezone(DEFAULT_START_DATE),
+         initialDateTo = getDateAdjustedForTimezone(DEFAULT_END_DATE),
          initialCompareFrom,
          initialCompareTo,
          onUpdate,
@@ -117,6 +119,8 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     const [isSmallScreen, setIsSmallScreen] = useState(
         typeof window !== 'undefined' ? window.innerWidth < 960 : false
     )
+
+    const { refetch } = useDateRangeQuery();
 
     useEffect(() => {
         const handleResize = (): void => {
@@ -319,6 +323,17 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
             openedRangeCompareRef.current = rangeCompare
         }
     }, [isOpen])
+
+    const handleUpdate = () => {
+        setIsOpen(false);
+        if (
+            !areRangesEqual(range, openedRangeRef.current) ||
+            !areRangesEqual(rangeCompare, openedRangeCompareRef.current)
+        ) {
+            onUpdate?.({range, rangeCompare});
+            refetch();
+        }
+    };
 
     return (
         <Popover
@@ -534,15 +549,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                         Cancel
                     </Button>
                     <Button
-                        onClick={() => {
-                            setIsOpen(false)
-                            if (
-                                !areRangesEqual(range, openedRangeRef.current) ||
-                                !areRangesEqual(rangeCompare, openedRangeCompareRef.current)
-                            ) {
-                                onUpdate?.({range, rangeCompare})
-                            }
-                        }}
+                        onClick={handleUpdate}
                     >
                         Update
                     </Button>
