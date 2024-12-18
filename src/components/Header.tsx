@@ -116,7 +116,7 @@ const Header: React.FC = () => {
                                     </NavListItem>
                                     <NavListItem
                                         to="/settings/new-bank-account"
-                                        title="AccountApis Manager"
+                                        title="Account Manager"
                                         icon={CreditCard}
                                     >
                                         Add and manage your connected bank accounts

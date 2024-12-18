@@ -27,8 +27,8 @@ import {
 import {Account} from "@/services/apis/types.tsx";
 import {useAccountMutation} from "@/services/queries/useAccountMutation.tsx";
 import {useAccountsQuery} from "@/services/queries/useAccountQueries.tsx";
-import { useAccountOptionsQuery } from "@/services/queries/useAccountOptionsQuery";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {useAccountOptionsQuery} from "@/services/queries/useAccountOptionsQuery";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 
 
 export const columns: ColumnDef<Account>[] = [
@@ -84,7 +84,7 @@ export function AccountManager() {
     });
     const [isModifying, setIsModifying] = React.useState(false);
     const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
-    const { supportedBanks, supportedAccountTypes, isLoading: isLoadingOptions } = useAccountOptionsQuery();
+    const {supportedBanks, supportedAccountTypes, isLoading: isLoadingOptions} = useAccountOptionsQuery();
 
     const handleAddAccount = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -131,7 +131,7 @@ export function AccountManager() {
 
     const handleDeleteAccount = async (accountId: string) => {
         try {
-            await deleteAccountMutation({accountId});
+            deleteAccountMutation({accountId});
         } catch (error) {
             console.error('Failed to delete account:', error);
         }
@@ -284,7 +284,7 @@ export function AccountManager() {
                                     onValueChange={(value: string) => setNewAccount({...newAccount, bankName: value})}
                                 >
                                     <SelectTrigger className="mt-1 w-full bg-gray-200">
-                                        <SelectValue placeholder="Select a bank" />
+                                        <SelectValue placeholder="Select a bank"/>
                                     </SelectTrigger>
                                     <SelectContent>
                                         {supportedBanks.data?.map((bank) => (
@@ -308,10 +308,13 @@ export function AccountManager() {
                                 <label className="block text-sm font-medium text-black">Type</label>
                                 <Select
                                     value={newAccount.accountType}
-                                    onValueChange={(value: string) => setNewAccount({...newAccount, accountType: value})}
+                                    onValueChange={(value: string) => setNewAccount({
+                                        ...newAccount,
+                                        accountType: value
+                                    })}
                                 >
                                     <SelectTrigger className="mt-1 w-full bg-gray-200">
-                                        <SelectValue placeholder="Select account type" />
+                                        <SelectValue placeholder="Select account type"/>
                                     </SelectTrigger>
                                     <SelectContent>
                                         {supportedAccountTypes.data?.map((type) => (
