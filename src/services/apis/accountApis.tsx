@@ -37,7 +37,7 @@ export const updateAccount = async (account: Account): Promise<Account> => {
 };
 
 export const deleteAccount = async (
-    params: { accountId?: string; bankName?: string; accountName?: string }
+    params: { accountId?: number; bankName?: string; accountName?: string }
 ): Promise<void> => {
     const queryParams = {
         'account-id': params.accountId,

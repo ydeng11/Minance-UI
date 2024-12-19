@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchSupportedBanks, fetchSupportedAccountTypes } from "@/services/apis/accountApis";
+import {useQuery} from "@tanstack/react-query";
+import {fetchSupportedAccountTypes, fetchSupportedBanks} from "@/services/apis/accountApis";
 
-export const useAccountOptionsQuery = () => {
+export const useBankAndAccountTypeQuery = () => {
     const supportedBanks = useQuery({
         queryKey: ['supportedBanks'],
         queryFn: fetchSupportedBanks,

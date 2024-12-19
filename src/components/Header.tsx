@@ -15,8 +15,8 @@ import {CreditCard, LucideProps, Tags} from 'lucide-react' // Import icons
 import 'react-datepicker/dist/react-datepicker.css'; // Basic styles
 // Custom styles for the date picker
 import {DateRangePicker} from "@/components/utils/datePicker/date-range-picker.tsx";
-import ImportTransactions from "@/components/utils/ImportTransactionModal.tsx";
 import {useDateRangeStore} from "@/store/dateRangeStore";
+import ImportTransactions from "@/components/utils/ImportTransactionModal.tsx";
 
 interface NavListItemProps extends React.ComponentPropsWithoutRef<"a"> {
     to: string,

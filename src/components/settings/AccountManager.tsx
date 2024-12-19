@@ -27,7 +27,7 @@ import {
 import {Account} from "@/services/apis/types.tsx";
 import {useAccountMutation} from "@/services/queries/useAccountMutation.tsx";
 import {useAccountsQuery} from "@/services/queries/useAccountQueries.tsx";
-import {useAccountOptionsQuery} from "@/services/queries/useAccountOptionsQuery";
+import {useBankAndAccountTypeQuery} from "@/services/queries/useBankAndAccountTypeQuery.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 
 
@@ -75,16 +75,16 @@ export function AccountManager() {
     const [rowSelection, setRowSelection] = React.useState({})
     const [isDialogOpen, setIsDialogOpen] = React.useState<boolean>(false);
     const [newAccount, setNewAccount] = React.useState({
-        accountId: '',
-        bankId: '',
+        accountId: 0,
+        bankId: 0,
         bankName: '',
         accountName: '',
         accountType: '',
-        initBalance: ''
+        initBalance: 0.0
     });
     const [isModifying, setIsModifying] = React.useState(false);
     const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null);
-    const {supportedBanks, supportedAccountTypes, isLoading: isLoadingOptions} = useAccountOptionsQuery();
+    const {supportedBanks, supportedAccountTypes, isLoading: isLoadingOptions} = useBankAndAccountTypeQuery();
 
     const handleAddAccount = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -92,12 +92,12 @@ export function AccountManager() {
             createAccountMutation(newAccount);
             setIsDialogOpen(false);
             setNewAccount({
-                accountId: '',
-                bankId: '',
+                accountId: 0,
+                bankId: 0,
                 bankName: '',
                 accountName: '',
                 accountType: '',
-                initBalance: ''
+                initBalance: 0.0
             });
         } catch (error) {
             console.error('Failed to create account:', error);
@@ -117,19 +117,19 @@ export function AccountManager() {
             setIsModifying(false);
             setSelectedAccount(null);
             setNewAccount({
-                accountId: '',
-                bankId: '',
+                accountId: 0,
+                bankId: 0,
                 bankName: '',
                 accountName: '',
                 accountType: '',
-                initBalance: ''
+                initBalance: 0.0
             });
         } catch (error) {
             console.error('Failed to update account:', error);
         }
     };
 
-    const handleDeleteAccount = async (accountId: string) => {
+    const handleDeleteAccount = async (accountId: number) => {
         try {
             deleteAccountMutation({accountId});
         } catch (error) {
@@ -140,7 +140,7 @@ export function AccountManager() {
     const openModifyDialog = (account: Account) => {
         setSelectedAccount(account);
         setNewAccount({
-            accountId: '',
+            accountId: 0,
             bankId: account.bankId,
             bankName: account.bankName,
             accountName: account.accountName,
@@ -330,7 +330,10 @@ export function AccountManager() {
                                 <input
                                     type="text"
                                     value={newAccount.initBalance}
-                                    onChange={(e) => setNewAccount({...newAccount, initBalance: e.target.value})}
+                                    onChange={(e) => setNewAccount({
+                                        ...newAccount,
+                                        initBalance: parseFloat(e.target.value)
+                                    })}
                                     className="mt-1 block w-full border border-gray-300 bg-gray-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black p-2"
                                 />
                             </div>

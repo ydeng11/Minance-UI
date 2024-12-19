@@ -1,10 +1,10 @@
 export interface Account {
-    accountId: string;
-    bankId: string;
+    accountId: number;
+    bankId: number;
     bankName: string;
     accountName: string;
     accountType: string;
-    initBalance: string;
+    initBalance: number;
 }
 
 export interface TransactionsUploadForm {
