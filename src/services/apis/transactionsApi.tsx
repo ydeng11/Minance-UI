@@ -5,7 +5,7 @@ export const uploadTransactions = async (file: File, form: TransactionsUploadFor
     formData.append('csv', file);
     formData.append('form', JSON.stringify(form));
 
-    const response = await fetch("http://localhost:8080/1.0/minance/transactions/upload_csv", {
+    const response = await fetch("/1.0/minance/transactions/upload_csv", {
         method: "POST",
         body: formData,
     });
@@ -19,7 +19,7 @@ export const uploadTransactions = async (file: File, form: TransactionsUploadFor
 };
 
 export const createTransaction = async (transaction: Transaction): Promise<string> => {
-    const response = await fetch("http://localhost:8080/1.0/minance/transactions/create", {
+    const response = await fetch("/1.0/minance/transactions/create", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -41,7 +41,7 @@ export const updateTransaction = async (
     transaction: Transaction
 ): Promise<Transaction> => {
     const response = await fetch(
-        `http://localhost:8080/1.0/minance/transactions/update/account/${accountId}/transaction/${transactionId}`,
+        `/1.0/minance/transactions/update/account/${accountId}/transaction/${transactionId}`,
         {
             method: "PUT",
             headers: {
@@ -64,7 +64,7 @@ export const retrieveTransactions = async (
     accountName: string,
     isDuplicate?: boolean
 ): Promise<Transaction[]> => {
-    const url = new URL(`http://localhost:8080/1.0/minance/transactions/retrieve/${bankName}/${accountName}`);
+    const url = new URL(`/1.0/minance/transactions/retrieve/${bankName}/${accountName}`);
     if (isDuplicate) {
         url.searchParams.append('duplicate', 'y');
     }
@@ -80,7 +80,7 @@ export const retrieveTransactions = async (
 };
 
 export const deleteTransaction = async (transactionId: number): Promise<void> => {
-    const response = await fetch(`http://localhost:8080/1.0/minance/transactions/delete/${transactionId}`, {
+    const response = await fetch(`/1.0/minance/transactions/delete/${transactionId}`, {
         method: "DELETE",
     });
 
@@ -91,7 +91,7 @@ export const deleteTransaction = async (transactionId: number): Promise<void> =>
 };
 
 export const deleteTransactions = async (transactionIds: number[]): Promise<string> => {
-    const response = await fetch("http://localhost:8080/1.0/minance/transactions/delete", {
+    const response = await fetch("/1.0/minance/transactions/delete", {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
@@ -109,7 +109,7 @@ export const deleteTransactions = async (transactionIds: number[]): Promise<stri
 
 export const deleteTransactionsByUploadTime = async (uploadTime: string): Promise<string> => {
     const response = await fetch(
-        `http://localhost:8080/1.0/minance/transactions/delete/uploadTime/${uploadTime}`,
+        `/1.0/minance/transactions/delete/uploadTime/${uploadTime}`,
         {
             method: "DELETE",
         }
@@ -124,7 +124,7 @@ export const deleteTransactionsByUploadTime = async (uploadTime: string): Promis
 };
 
 export const retrieveAllTransactions = async (): Promise<Transaction[]> => {
-    const response = await fetch("http://localhost:8080/1.0/minance/transactions/retrieve");
+    const response = await fetch("/1.0/minance/transactions/retrieve");
 
     if (!response.ok) {
         const errorResponse = await response.json();
@@ -136,7 +136,7 @@ export const retrieveAllTransactions = async (): Promise<Transaction[]> => {
 
 export const retrieveTransactionsByDateRange = async (startDate: string, endDate: string): Promise<Transaction[]> => {
     const response = await fetch(
-        `http://localhost:8080/1.0/minance/transactions/retrieve/${startDate}/${endDate}`
+        `/1.0/minance/transactions/retrieve/${startDate}/${endDate}`
     );
 
     if (!response.ok) {

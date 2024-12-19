@@ -3,7 +3,7 @@
 import {Account} from "./types"; // Define Account interface
 
 export const createAccount = async (account: Account): Promise<Account> => {
-    const response = await fetch("http://localhost:8080/1.0/minance/account/create", {
+    const response = await fetch("/1.0/minance/account/create", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -20,7 +20,7 @@ export const createAccount = async (account: Account): Promise<Account> => {
 };
 
 export const updateAccount = async (account: Account): Promise<Account> => {
-    const response = await fetch("http://localhost:8080/1.0/minance/account/update", {
+    const response = await fetch("/1.0/minance/account/update", {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -49,7 +49,7 @@ export const deleteAccount = async (
             .filter(([, v]) => v !== undefined)
             .reduce((acc, [k, v]) => ({...acc, [k]: v}), {})
     ).toString();
-    const response = await fetch(`http://localhost:8080/1.0/minance/account/delete?${query}`, {
+    const response = await fetch(`/1.0/minance/account/delete?${query}`, {
         method: "DELETE",
     });
 
@@ -60,7 +60,7 @@ export const deleteAccount = async (
 };
 
 export const fetchAccounts = async (): Promise<Account[]> => {
-    const response = await fetch("http://localhost:8080/1.0/minance/account/listAll");
+    const response = await fetch("/1.0/minance/account/listAll");
     if (!response.ok) {
         const errorResponse = await response.json();
         throw new Error(errorResponse.message || "Failed to retrieve accounts");
@@ -70,7 +70,7 @@ export const fetchAccounts = async (): Promise<Account[]> => {
 
 export const fetchAccountsByBank = async (bankName: string): Promise<Account[]> => {
     const response = await fetch(
-        `http://localhost:8080/1.0/minance/account/listAccountsForBank?bank-name=${encodeURIComponent(
+        `/1.0/minance/account/listAccountsForBank?bank-name=${encodeURIComponent(
             bankName
         )}`
     );
@@ -84,7 +84,7 @@ export const fetchAccountsByBank = async (bankName: string): Promise<Account[]> 
 };
 
 export const fetchSupportedBanks = async (): Promise<string[]> => {
-    const response = await fetch("http://localhost:8080/1.0/minance/account/supportedBanks");
+    const response = await fetch("/1.0/minance/account/supportedBanks");
     if (!response.ok) {
         const errorResponse = await response.json();
         throw new Error(errorResponse.message || "Failed to retrieve supported banks");
@@ -93,7 +93,7 @@ export const fetchSupportedBanks = async (): Promise<string[]> => {
 };
 
 export const fetchSupportedAccountTypes = async (): Promise<string[]> => {
-    const response = await fetch("http://localhost:8080/1.0/minance/account/supportedAccountTypes");
+    const response = await fetch("/1.0/minance/account/supportedAccountTypes");
     if (!response.ok) {
         const errorResponse = await response.json();
         throw new Error(errorResponse.message || "Failed to retrieve supported account types");

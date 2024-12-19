@@ -15,7 +15,7 @@ export interface CategoryMapping {
 
 // API functions
 export const createMinanceCategory = async (category: string): Promise<string> => {
-    const response = await fetch(`http://localhost:8080/1.0/minance/mapping_category/create/${category}`, {
+    const response = await fetch(`/1.0/minance/mapping_category/create/${category}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -31,7 +31,7 @@ export const createMinanceCategory = async (category: string): Promise<string> =
 };
 
 export const deleteMinanceCategory = async (category: MinanceCategory): Promise<string> => {
-    const response = await fetch("http://localhost:8080/1.0/minance/mapping_category/delete", {
+    const response = await fetch("/1.0/minance/mapping_category/delete", {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
@@ -49,7 +49,7 @@ export const deleteMinanceCategory = async (category: MinanceCategory): Promise<
 
 export const getAllMinanceCategories = async (): Promise<MinanceCategory[]> => {
     const response = await fetch(
-        "http://localhost:8080/1.0/minance/mapping_category/minanceCategory/retrieveAll"
+        "/1.0/minance/mapping_category/minanceCategory/retrieveAll"
     );
 
     if (!response.ok) {
@@ -62,7 +62,7 @@ export const getAllMinanceCategories = async (): Promise<MinanceCategory[]> => {
 
 export const linkCategories = async (categoryMapping: CategoryMapping): Promise<string> => {
     console.log(categoryMapping);
-    const response = await fetch("http://localhost:8080/1.0/minance/mapping_category/linkCategory", {
+    const response = await fetch("/1.0/minance/mapping_category/linkCategory", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export const linkCategories = async (categoryMapping: CategoryMapping): Promise<
 
 export const getUnlinkedCategories = async (): Promise<RawCategory[]> => {
     const response = await fetch(
-        "http://localhost:8080/1.0/minance/mapping_category/unlinkedCategories/retrieveAll"
+        "/1.0/minance/mapping_category/unlinkedCategories/retrieveAll"
     );
 
     if (!response.ok) {
@@ -93,7 +93,7 @@ export const getUnlinkedCategories = async (): Promise<RawCategory[]> => {
 
 export const getLinkedCategoriesForMinanceCategory = async (minanceCategory: string): Promise<RawCategory[]> => {
     const response = await fetch(
-        `http://localhost:8080/1.0/minance/mapping_category/retrieve/${encodeURIComponent(minanceCategory)}`
+        `/1.0/minance/mapping_category/retrieve/${encodeURIComponent(minanceCategory)}`
     );
 
     if (!response.ok) {
