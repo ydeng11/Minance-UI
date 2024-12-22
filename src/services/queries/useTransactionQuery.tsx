@@ -7,7 +7,7 @@ export const useTransactionQuery = () => {
     const {startDate, endDate} = useDateRangeStore();
 
     return useQuery({
-        queryKey: ['transactions', startDate, endDate],
+        queryKey: ['transactions'],
         queryFn: async () => {
             try {
                 return await retrieveTransactionsByDateRange(startDate, endDate);
