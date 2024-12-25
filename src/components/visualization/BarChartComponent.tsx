@@ -70,6 +70,7 @@ const BarChartComponent: React.FC = () => {
                 selectedCategories={selectedCategories}
                 dataFormatter={dataFormatter}
             />
+            <div className="h-12"/>
             <TotalExpenseChart
                 chartData={chartData}
                 selectedCategories={selectedCategories}
