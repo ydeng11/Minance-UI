@@ -4,25 +4,24 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import {Transaction} from "@/services/apis/types";
 import {useTransactionStore} from '@/store/transactionStore';
-import {useTransactionQuery} from '@/services/queries/useTransactionQuery';
 import {useTransactionMutation} from '@/services/queries/useTransactionMutation';
+import {useDateRangeQuery} from '@/services/queries/useDateRangeQuery';
 
 export function ExpenseTable() {
     const gridRef = React.useRef<AgGridReact>(null);
     const {setTransactions} = useTransactionStore();
     const [selectedRows, setSelectedRows] = React.useState<Transaction[]>([]);
-    const [rowData, setRowData] = React.useState<Transaction[]>([]);
 
-    const {data: transactions, isLoading, isError} = useTransactionQuery();
+    const {data: transactions, isLoading, isError} = useDateRangeQuery();
     const {updateTransactionMutation, deleteTransactionMutation} = useTransactionMutation();
 
     React.useEffect(() => {
         if (transactions) {
             setTransactions(transactions);
-            setRowData(transactions);
         }
     }, [transactions, setTransactions]);
-    const onCellValueChanged = (params: any) => {
+
+    const onCellValueChanged = (params: {data: Transaction}) => {
         const transaction = params.data as Transaction;
         updateTransactionMutation({
             accountId: transaction.accountId,
@@ -79,7 +78,7 @@ export function ExpenseTable() {
             sortable: true,
             filter: true,
             editable: true,
-            valueFormatter: (params: any) => {
+            valueFormatter: (params: { value: number }) => {
                 return new Intl.NumberFormat('en-US', {
                     style: 'currency',
                     currency: 'USD',
@@ -126,7 +125,7 @@ export function ExpenseTable() {
                 <div className="ag-theme-alpine w-full h-full">
                     <AgGridReact
                         ref={gridRef}
-                        rowData={rowData}
+                        rowData={transactions}
                         columnDefs={columnDefs}
                         defaultColDef={defaultColDef}
                         animateRows={true}

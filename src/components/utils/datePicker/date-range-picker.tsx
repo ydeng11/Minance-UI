@@ -11,8 +11,8 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from './s
 import {Switch} from './switch'
 import {CheckIcon, ChevronDownIcon, ChevronUpIcon} from '@radix-ui/react-icons'
 import {cn} from '@/lib/utils'
-import { DEFAULT_START_DATE, DEFAULT_END_DATE } from '@/store/dateRangeStore'
-import { useDateRangeQuery } from "@/services/queries/useDateRangeQuery";
+import {DEFAULT_END_DATE, DEFAULT_START_DATE, useDateRangeStore} from '@/store/dateRangeStore'
+import {useDateRangeQuery} from "@/services/queries/useDateRangeQuery";
 
 export interface DateRangePickerProps {
     /** Click handler for applying the updates from DateRangePicker. */
@@ -121,6 +121,16 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     )
 
     const { refetch } = useDateRangeQuery();
+    const { setDateRange } = useDateRangeStore();
+
+    useEffect(() => {
+        console.log('Initial range:', range);
+        console.log('Initial openedRangeRef:', openedRangeRef.current);
+    }, []);
+
+    useEffect(() => {
+        console.log('Range changed:', range);
+    }, [range]);
 
     useEffect(() => {
         const handleResize = (): void => {
@@ -310,30 +320,49 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
 
     // Helper function to check if two date ranges are equal
     const areRangesEqual = (a?: DateRange, b?: DateRange): boolean => {
-        if (!a || !b) return a === b // If either is undefined, return true if both are undefined
-        return (
-            a.from.getTime() === b.from.getTime() &&
-            (!a.to || !b.to || a.to.getTime() === b.to.getTime())
-        )
+        if (!a || !b) return false;
+        const fromEqual = a.from.getTime() === b.from.getTime();
+        const toEqual = (!a.to && !b.to) || (a.to?.getTime() === b.to?.getTime());
+        return fromEqual && toEqual;
     }
 
     useEffect(() => {
-        if (isOpen) {
-            openedRangeRef.current = range
-            openedRangeCompareRef.current = rangeCompare
+        // Only update refs when the picker is first opened
+        if (isOpen && !openedRangeRef.current) {
+            openedRangeRef.current = range;
+            openedRangeCompareRef.current = rangeCompare;
         }
-    }, [isOpen])
+    }, [isOpen, range, rangeCompare]);
 
     const handleUpdate = () => {
         setIsOpen(false);
-        if (
-            !areRangesEqual(range, openedRangeRef.current) ||
-            !areRangesEqual(rangeCompare, openedRangeCompareRef.current)
-        ) {
-            onUpdate?.({range, rangeCompare});
+        
+        // Check if ranges have changed
+        const rangeChanged = !areRangesEqual(range, openedRangeRef.current);
+        const compareRangeChanged = !areRangesEqual(rangeCompare, openedRangeCompareRef.current);
+        
+        if (rangeChanged || compareRangeChanged) {
+            const fromDate = range.from.toISOString().split('T')[0];
+            const toDate = range.to?.toISOString().split('T')[0] || '';
+            setDateRange(fromDate, toDate);
             refetch();
+            onUpdate?.({range, rangeCompare});
         }
     };
+
+    const updateButton = (
+        <Button
+            onClick={() => {
+                handleUpdate();
+            }}
+            className={cn(
+                'w-[120px] ml-2',
+                !isSmallScreen && 'w-[140px]'
+            )}
+        >
+            Update
+        </Button>
+    );
 
     return (
         <Popover
@@ -502,24 +531,44 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                                     </SelectContent>
                                 </Select>
                             )}
-                            <div>
-                                <Calendar
-                                    mode="range"
-                                    onSelect={(value: { from?: Date, to?: Date } | undefined) => {
-                                        if (value?.from != null) {
-                                            setRange({from: value.from, to: value?.to})
-                                        }
-                                    }}
-                                    selected={range}
-                                    numberOfMonths={isSmallScreen ? 1 : 2}
-                                    defaultMonth={
-                                        new Date(
-                                            new Date().setMonth(
-                                                new Date().getMonth() - (isSmallScreen ? 0 : 1)
-                                            )
-                                        )
-                                    }
-                                />
+                            <div className="flex gap-4">
+                                <div>
+                                    <Calendar
+                                        mode="single"
+                                        selected={range.from}
+                                        onSelect={(date) => {
+                                            if (date) {
+                                                setRange((prev) => ({
+                                                    ...prev,
+                                                    from: date,
+                                                    // If end date is before start date, update it
+                                                    to: prev.to && date > prev.to ? date : prev.to
+                                                }));
+                                            }
+                                        }}
+                                        defaultMonth={range.from}
+                                        numberOfMonths={1}
+                                    />
+                                </div>
+                                <div>
+                                    <Calendar
+                                        mode="single"
+                                        selected={range.to}
+                                        onSelect={(date) => {
+                                            if (date) {
+                                                setRange((prev) => ({
+                                                    ...prev,
+                                                    to: date,
+                                                    // If start date is after end date, update it
+                                                    from: date < prev.from ? date : prev.from
+                                                }));
+                                            }
+                                        }}
+                                        defaultMonth={range.to || range.from}
+                                        numberOfMonths={1}
+                                        disabled={(date) => date < range.from}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -548,11 +597,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                     >
                         Cancel
                     </Button>
-                    <Button
-                        onClick={handleUpdate}
-                    >
-                        Update
-                    </Button>
+                    {updateButton}
                 </div>
             </PopoverContent>
         </Popover>

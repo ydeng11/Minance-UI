@@ -24,8 +24,8 @@ const BarChartComponent: React.FC = () => {
 
     const processTransactionData = useCallback(() => {
         const monthlyData = transactions.reduce((acc, transaction) => {
-            const date = new Date(transaction.transactionDate);
-            const monthYear = date.toLocaleString('default', {month: 'short', year: '2-digit'});
+            const [year, month] = transaction.transactionDate.split('-');
+            const monthYear = `${new Date(parseInt(year), parseInt(month) - 1).toLocaleString('default', {month: 'short'})} ${year.slice(2)}`;
 
             if (!acc[monthYear]) {
                 acc[monthYear] = {};

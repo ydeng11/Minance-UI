@@ -6,8 +6,9 @@ export const useDateRangeQuery = () => {
     const { startDate, endDate } = useDateRangeStore();
 
     return useQuery({
-        queryKey: ['transactions'],
+        queryKey: ['transactions', startDate, endDate],
         queryFn: () => retrieveTransactionsByDateRange(startDate, endDate),
         enabled: !!startDate && !!endDate,
+        staleTime: 1000 * 60 * 5,
     });
 }; 
