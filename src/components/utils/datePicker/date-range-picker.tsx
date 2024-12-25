@@ -124,15 +124,6 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     const { setDateRange } = useDateRangeStore();
 
     useEffect(() => {
-        console.log('Initial range:', range);
-        console.log('Initial openedRangeRef:', openedRangeRef.current);
-    }, []);
-
-    useEffect(() => {
-        console.log('Range changed:', range);
-    }, [range]);
-
-    useEffect(() => {
         const handleResize = (): void => {
             setIsSmallScreen(window.innerWidth < 960)
         }
