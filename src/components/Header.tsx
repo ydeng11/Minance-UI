@@ -17,7 +17,6 @@ import 'react-datepicker/dist/react-datepicker.css'; // Basic styles
 import {DateRangePicker} from "@/components/utils/datePicker/date-range-picker.tsx";
 import {useDateRangeStore} from "@/store/dateRangeStore";
 import ImportTransactions from "@/components/utils/ImportTransactionModal.tsx";
-import { useQueryClient } from "@tanstack/react-query";
 
 interface NavListItemProps extends React.ComponentPropsWithoutRef<"a"> {
     to: string,
@@ -62,7 +61,6 @@ NavListItem.displayName = "NavListItem";
 
 const Header: React.FC = () => {
     const setDateRange = useDateRangeStore((state: { setDateRange: any; }) => state.setDateRange);
-    const queryClient = useQueryClient();
 
     return (
         <header className="flex items-center justify-between p-4 bg-card shadow-lg">
