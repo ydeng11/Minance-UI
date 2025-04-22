@@ -21,7 +21,7 @@ export function ExpenseTable() {
     const [filterState, setFilterState] = React.useState<any>(null);
     const isInitialRender = React.useRef(true);
 
-    const { data: transactions, isLoading, isError, dataUpdatedAt } = useDateRangeQuery();
+    const { data: transactions, isLoading, isError } = useDateRangeQuery();
     const { updateTransactionMutation, deleteTransactionMutation } = useTransactionMutation();
 
     // Save filter state to localStorage
