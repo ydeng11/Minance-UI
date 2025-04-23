@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -8,15 +8,17 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import {Button} from "@/components/ui/button";
-import {Label} from "@/components/ui/label";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {Input} from "@/components/ui/input";
-import {useBankAndAccountTypeQuery} from "@/services/queries/useBankAndAccountTypeQuery";
-import {toast} from "@/hooks/use-toast";
-import {useAccountByBankQuery} from "@/services/queries/useAccountsByBankQuery.tsx";
-import {Account, TransactionsUploadForm} from "@/services/apis/types.tsx";
-import {uploadTransactions} from "@/services/apis/transactionsApi.tsx";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { useBankAndAccountTypeQuery } from "@/services/queries/useBankAndAccountTypeQuery";
+import { toast } from "@/hooks/use-toast";
+import { useAccountByBankQuery } from "@/services/queries/useAccountsByBankQuery.tsx";
+import { Account, TransactionsUploadForm } from "@/services/apis/types.tsx";
+import { uploadTransactions } from "@/services/apis/transactionsApi.tsx";
+import { useImportStore } from "@/store/importStore";
+import { useQueryClient } from "@tanstack/react-query";
 
 const ImportTransactions: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -26,16 +28,22 @@ const ImportTransactions: React.FC = () => {
         file: null as File | null,
         useMinanceFormat: false,
     });
-    const {supportedBanks, isLoading: isBanksLoading, isError: isBanksError} = useBankAndAccountTypeQuery();
+    const { supportedBanks, isLoading: isBanksLoading, isError: isBanksError } = useBankAndAccountTypeQuery();
     const {
         data: accounts,
         isLoading: isAccountsLoading,
         isError: isAccountsError
     } = useAccountByBankQuery(formData.bank);
 
+    // Get the triggerRefresh function from the import store
+    const triggerRefresh = useImportStore(state => state.triggerRefresh);
+
+    // Get the query client to invalidate queries
+    const queryClient = useQueryClient();
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            setFormData((prev) => ({...prev, file: e.target.files![0]}));
+            setFormData((prev) => ({ ...prev, file: e.target.files![0] }));
         }
     };
 
@@ -60,12 +68,22 @@ const ImportTransactions: React.FC = () => {
 
             await uploadTransactions(formData.file, uploadForm);
 
+            // Reset form and close dialog
             setOpen(false);
-            setFormData({bank: '', account: '', file: null, useMinanceFormat: false});
+            setFormData({ bank: '', account: '', file: null, useMinanceFormat: false });
+
+            // Notify success
             toast({
                 title: "Success",
                 description: "Transactions imported successfully",
             });
+
+            // Trigger refresh for visualization components
+            triggerRefresh();
+
+            // Invalidate transaction queries to force refetch
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+
         } catch (error) {
             console.error('Error uploading file:', error);
             toast({
@@ -80,7 +98,7 @@ const ImportTransactions: React.FC = () => {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="ghost" size="lg"
-                        className="h-10 bg-indigo-600 text-white rounded-md px-4 hover:bg-indigo-700">
+                    className="h-10 bg-indigo-600 text-white rounded-md px-4 hover:bg-indigo-700">
                     Import Transactions
                 </Button>
             </DialogTrigger>
@@ -107,7 +125,7 @@ const ImportTransactions: React.FC = () => {
                                 value={formData.bank}
                             >
                                 <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select a bank"/>
+                                    <SelectValue placeholder="Select a bank" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {isBanksLoading ? (
@@ -143,7 +161,7 @@ const ImportTransactions: React.FC = () => {
                                 disabled={!formData.bank || isAccountsLoading}
                             >
                                 <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select an account"/>
+                                    <SelectValue placeholder="Select an account" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {isAccountsLoading ? (

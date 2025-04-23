@@ -7,6 +7,8 @@ import { useTransactionStore } from '@/store/transactionStore';
 import { useTransactionMutation } from '@/services/queries/useTransactionMutation';
 import { useDateRangeQuery } from '@/services/queries/useDateRangeQuery';
 import { useDateRangeStore } from '@/store/dateRangeStore';
+import { useImportStore } from '@/store/importStore';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Filter state storage key
 const FILTER_STATE_KEY = 'expense-table-filter-state';
@@ -21,8 +23,21 @@ export function ExpenseTable() {
     const [filterState, setFilterState] = React.useState<any>(null);
     const isInitialRender = React.useRef(true);
 
+    // Get the query client for manual refetching
+    const queryClient = useQueryClient();
+
+    // Get the last import time to trigger refetch when new transactions are imported
+    const lastImportTime = useImportStore(state => state.lastImportTime);
+
     const { data: transactions, isLoading, isError } = useDateRangeQuery();
     const { updateTransactionMutation, deleteTransactionMutation } = useTransactionMutation();
+
+    // Effect to refetch data when new transactions are imported
+    React.useEffect(() => {
+        if (lastImportTime > 0) {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        }
+    }, [lastImportTime, queryClient]);
 
     // Save filter state to localStorage
     const saveFilterState = React.useCallback(() => {

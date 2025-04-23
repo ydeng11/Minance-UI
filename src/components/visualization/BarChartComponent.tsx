@@ -5,6 +5,9 @@ import { ExpenseBarChart } from './ExpenseBarChart';
 import { TotalExpenseChart } from './TotalExpenseChart';
 import { CategoryPieChart } from './CategoryPieChart';
 import { ChartDataItem } from '@/types/chart';
+import { useDateRangeQuery } from '@/services/queries/useDateRangeQuery';
+import { useImportStore } from '@/store/importStore';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Key for storing selected categories in localStorage
 const SELECTED_CATEGORIES_KEY = 'bar-chart-selected-categories';
@@ -12,7 +15,9 @@ const SELECTED_CATEGORIES_KEY = 'bar-chart-selected-categories';
 const CHART_TYPE_KEY = 'bar-chart-type';
 
 const BarChartComponent: React.FC = () => {
-    const { transactions } = useTransactionStore();
+    // Use the date range query to get updated transactions when date picker changes
+    const { data: queryTransactions, isLoading } = useDateRangeQuery();
+    const { transactions, setTransactions } = useTransactionStore();
     const [categories, setCategories] = useState<string[]>([]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [chartData, setChartData] = useState<ChartDataItem[]>([]);
@@ -21,6 +26,26 @@ const BarChartComponent: React.FC = () => {
         return localStorage.getItem(CHART_TYPE_KEY) || "stacked";
     });
     const [hasSetInitialState, setHasSetInitialState] = useState(false);
+
+    // Get the query client for manual refetching
+    const queryClient = useQueryClient();
+
+    // Get the last import time to trigger refreshes
+    const lastImportTime = useImportStore(state => state.lastImportTime);
+
+    // Effect to refetch data when new transactions are imported
+    useEffect(() => {
+        if (lastImportTime > 0) {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        }
+    }, [lastImportTime, queryClient]);
+
+    // Update the transaction store when new data is fetched from date range query
+    useEffect(() => {
+        if (queryTransactions) {
+            setTransactions(queryTransactions);
+        }
+    }, [queryTransactions, setTransactions]);
 
     // Save selectedCategories to localStorage when it changes
     useEffect(() => {
@@ -35,6 +60,8 @@ const BarChartComponent: React.FC = () => {
     }, [chartType]);
 
     useEffect(() => {
+        if (!transactions || transactions.length === 0) return;
+
         const uniqueCategories = Array.from(
             new Set(transactions.map(t => t.category || 'Uncategorized'))
         );
@@ -69,6 +96,8 @@ const BarChartComponent: React.FC = () => {
     }, [transactions]);
 
     const processTransactionData = useCallback(() => {
+        if (!transactions || transactions.length === 0) return [];
+
         const monthlyData = transactions.reduce((acc, transaction) => {
             const [year, month] = transaction.transactionDate.split('-');
             const monthYear = `${new Date(parseInt(year), parseInt(month) - 1).toLocaleString('default', { month: 'short' })} ${year.slice(2)}`;
@@ -109,6 +138,11 @@ const BarChartComponent: React.FC = () => {
             style: 'currency',
             currency: 'USD'
         }).format(number);
+
+    // Show loading state while data is being fetched
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-64">Loading chart data...</div>;
+    }
 
     return (
         <div>

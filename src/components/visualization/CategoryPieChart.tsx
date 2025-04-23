@@ -2,6 +2,9 @@ import React, { useMemo } from 'react';
 import { DonutChart } from "@/components/analytics/DonutChart";
 import { useTransactionStore } from '@/store/transactionStore';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useDateRangeQuery } from '@/services/queries/useDateRangeQuery';
+import { useImportStore } from '@/store/importStore';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CategoryPieChartProps {
     selectedCategories: string[];
@@ -10,12 +13,34 @@ interface CategoryPieChartProps {
 export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
     selectedCategories
 }) => {
+    // Get transactions directly from the date range query to update when date picker changes
+    const { data: queryTransactions } = useDateRangeQuery();
     const { transactions } = useTransactionStore();
+
+    // Get the query client for manual refetching
+    const queryClient = useQueryClient();
+
+    // Get the last import time to trigger refreshes
+    const lastImportTime = useImportStore(state => state.lastImportTime);
+
+    // Effect to refetch data when new transactions are imported
+    React.useEffect(() => {
+        if (lastImportTime > 0) {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        }
+    }, [lastImportTime, queryClient]);
+
+    // Use query transactions if available, otherwise fall back to store
+    const currentTransactions = queryTransactions || transactions;
 
     // Process the data for the pie chart
     const pieChartData = useMemo(() => {
+        if (!currentTransactions || currentTransactions.length === 0) {
+            return [];
+        }
+
         // Filter transactions by selected categories
-        const filteredTransactions = transactions.filter(
+        const filteredTransactions = currentTransactions.filter(
             transaction => selectedCategories.includes(transaction.category || 'Uncategorized')
         );
 
@@ -31,7 +56,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
             category,
             amount: Math.abs(amount), // Use absolute value to show magnitude
         })).sort((a, b) => b.amount - a.amount); // Sort by amount (largest first)
-    }, [transactions, selectedCategories]);
+    }, [currentTransactions, selectedCategories]);
 
     // Calculate total
     const total = useMemo(() => {
