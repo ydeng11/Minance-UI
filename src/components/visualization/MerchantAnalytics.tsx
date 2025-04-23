@@ -5,7 +5,6 @@ import { useImportStore } from '@/store/importStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DonutChart } from "@/components/analytics/DonutChart";
-import { BarChart } from "@/components/analytics/BarChart";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SearchIcon, XCircleIcon, PlusCircleIcon } from "lucide-react";
@@ -104,13 +103,19 @@ export const MerchantAnalytics: React.FC = () => {
     }, [currentTransactions, excludedMerchants]);
 
     // Filter merchants by search term
-    const filteredMerchants = useMemo(() => {
+    const displayedMerchants = useMemo(() => {
+        if (showOthersCategory) {
+            // When showing Others category, get merchants beyond top 10
+            return merchantData.slice(10);
+        }
+
+        // Otherwise use the regular filtered merchants
         if (!searchTerm.trim()) return merchantData;
         const lowerSearchTerm = searchTerm.toLowerCase().trim();
         return merchantData.filter(m =>
             m.merchant.toLowerCase().includes(lowerSearchTerm)
         );
-    }, [merchantData, searchTerm]);
+    }, [merchantData, searchTerm, showOthersCategory]);
 
     // Get data for selected merchant
     const selectedMerchantData = useMemo(() => {
@@ -193,21 +198,6 @@ export const MerchantAnalytics: React.FC = () => {
             setSearchTerm('');
         }
     };
-
-    // Determine which merchants to display in the table
-    const displayedMerchants = useMemo(() => {
-        if (showOthersCategory) {
-            // When showing Others category, get merchants beyond top 10
-            return merchantData.slice(10);
-        }
-
-        // Otherwise use the regular filtered merchants
-        if (!searchTerm.trim()) return merchantData;
-        const lowerSearchTerm = searchTerm.toLowerCase().trim();
-        return merchantData.filter(m =>
-            m.merchant.toLowerCase().includes(lowerSearchTerm)
-        );
-    }, [merchantData, searchTerm, showOthersCategory]);
 
     return (
         <div className="space-y-6">
