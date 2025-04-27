@@ -65,7 +65,7 @@ const Header: React.FC = () => {
     return (
         <header className="flex items-center justify-between p-4 bg-card shadow-lg">
             <div className="flex items-center">
-                <div className="text-2xl font-bold text-foreground">Miance</div>
+                <div className="text-2xl font-bold text-foreground">Minance</div>
                 <NavigationMenu>
                     <NavigationMenuList className="ml-10 flex space-x-4">
                         <NavigationMenuItem>
