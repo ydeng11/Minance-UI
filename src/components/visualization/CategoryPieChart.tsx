@@ -39,9 +39,12 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
             return [];
         }
 
-        // Filter transactions by selected categories
+        // Filter for expenses (positive amounts) and selected categories
+        // Positive amounts = expenses, negative amounts = payments/transfers/refunds
         const filteredTransactions = currentTransactions.filter(
-            transaction => selectedCategories.includes(transaction.category || 'Uncategorized')
+            transaction =>
+                transaction.amount > 0 &&
+                selectedCategories.includes(transaction.category || 'Uncategorized')
         );
 
         // Group and sum the transactions by category
@@ -54,7 +57,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
         // Convert to array format required by DonutChart
         return Object.entries(categoryTotals).map(([category, amount]) => ({
             category,
-            amount: Math.abs(amount), // Use absolute value to show magnitude
+            amount, // Already positive from filtering, no need for Math.abs
         })).sort((a, b) => b.amount - a.amount); // Sort by amount (largest first)
     }, [currentTransactions, selectedCategories]);
 
