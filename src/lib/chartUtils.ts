@@ -139,8 +139,10 @@ export const formatChartMonth = (date: Date) => monthFormatter.format(date);
 export const buildMonthlyCategorySeries = (
     transactions: Transaction[],
 ): { categories: string[]; data: ChartDataItem[] } => {
+    // Filter for expenses: POSITIVE amounts are expenses (charges to credit cards, debits from accounts)
+    // NEGATIVE amounts are payments/transfers/refunds
     const expenses = transactions.filter(
-        (transaction) => typeof transaction.amount === "number" && transaction.amount < 0,
+        (transaction) => typeof transaction.amount === "number" && transaction.amount > 0,
     );
 
     if (expenses.length === 0) {
@@ -163,9 +165,14 @@ export const buildMonthlyCategorySeries = (
         timeline.push(cursor);
     }
 
+    // Extract categories only from expenses (positive amounts)
+    // This excludes non-expense categories like "Transfers", "Other Income", etc.
     const categories = Array.from(
         new Set(
-            expenses.map((transaction) => transaction.category || "Uncategorized"),
+            expenses.map((transaction) => {
+                const category = transaction.category?.trim();
+                return category && category !== "" ? category : "Uncategorized";
+            }),
         ),
     ).sort((a, b) => a.localeCompare(b));
 
@@ -181,7 +188,8 @@ export const buildMonthlyCategorySeries = (
     const monthMap = new Map(series.map((item) => [item.date, item]));
 
     expenses.forEach((transaction) => {
-        const category = transaction.category || "Uncategorized";
+        const category = transaction.category?.trim();
+        const normalizedCategory = category && category !== "" ? category : "Uncategorized";
         const monthKey = formatChartMonth(
             startOfMonth(parseISO(transaction.transactionDate)),
         );
@@ -189,8 +197,8 @@ export const buildMonthlyCategorySeries = (
         if (!entry) {
             return;
         }
-        entry[category] =
-            (Number(entry[category]) || 0) + Math.abs(transaction.amount);
+        entry[normalizedCategory] =
+            (Number(entry[normalizedCategory]) || 0) + Math.abs(transaction.amount);
     });
 
     return {
