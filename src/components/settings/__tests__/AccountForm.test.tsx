@@ -33,7 +33,7 @@ vi.mock("@/components/ui/select", () => {
 
     return {
         Select: MockSelect,
-        SelectTrigger: ({ children, id, ...props }: { children?: React.ReactNode; id?: string; [key: string]: unknown }) => (
+        SelectTrigger: ({ children, id, ...props }: { children?: React.ReactNode; id?: string;[key: string]: unknown }) => (
             <div id={id} {...props}>{children}</div>
         ),
         SelectContent: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
