@@ -33,3 +33,14 @@ export interface Transaction {
     uploadTime: string;
     isDuplicate: number;
 }
+
+export interface OverviewSummary {
+    totalExpenses: number;
+    totalExpensesChangePercent: number;
+    creditTotal: number;
+    creditChangePercent: number;
+    debitTotal: number;
+    debitChangePercent: number;
+    transactionCount: number;
+    transactionChangeCount: number;
+}

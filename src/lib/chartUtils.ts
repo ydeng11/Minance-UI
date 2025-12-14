@@ -1,3 +1,7 @@
+import { addMonths, isAfter, parseISO, startOfMonth } from "date-fns";
+import type { Transaction } from "@/services/apis/types";
+import type { ChartDataItem } from "@/types/chart";
+
 // Tremor Raw chartColors [v0.1.0]
 
 export type ColorUtility = "bg" | "stroke" | "fill" | "text"
@@ -108,10 +112,10 @@ export const getYAxisDomain = (
 // Tremor Raw hasOnlyOneValueForKey [v0.1.0]
 
 export function hasOnlyOneValueForKey(
-    array: any[],
+    array: Record<string, unknown>[],
     keyToCheck: string,
 ): boolean {
-    const val: any[] = []
+    const val: unknown[] = []
 
     for (const obj of array) {
         if (Object.prototype.hasOwnProperty.call(obj, keyToCheck)) {
@@ -124,3 +128,73 @@ export function hasOnlyOneValueForKey(
 
     return true
 }
+
+const monthFormatter = new Intl.DateTimeFormat("en", {
+    month: "short",
+    year: "2-digit",
+});
+
+export const formatChartMonth = (date: Date) => monthFormatter.format(date);
+
+export const buildMonthlyCategorySeries = (
+    transactions: Transaction[],
+): { categories: string[]; data: ChartDataItem[] } => {
+    const expenses = transactions.filter(
+        (transaction) => typeof transaction.amount === "number" && transaction.amount < 0,
+    );
+
+    if (expenses.length === 0) {
+        return {
+            categories: [],
+            data: [],
+        };
+    }
+
+    const orderedMonths = expenses
+        .map((transaction) => startOfMonth(parseISO(transaction.transactionDate)))
+        .sort((a, b) => a.getTime() - b.getTime());
+
+    const timeline: Date[] = [];
+    for (
+        let cursor = startOfMonth(orderedMonths[0]);
+        !isAfter(cursor, orderedMonths[orderedMonths.length - 1]);
+        cursor = addMonths(cursor, 1)
+    ) {
+        timeline.push(cursor);
+    }
+
+    const categories = Array.from(
+        new Set(
+            expenses.map((transaction) => transaction.category || "Uncategorized"),
+        ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    const series: ChartDataItem[] = timeline.map((date) => {
+        const label = formatChartMonth(date);
+        const item: ChartDataItem = { date: label };
+        categories.forEach((category) => {
+            item[category] = 0;
+        });
+        return item;
+    });
+
+    const monthMap = new Map(series.map((item) => [item.date, item]));
+
+    expenses.forEach((transaction) => {
+        const category = transaction.category || "Uncategorized";
+        const monthKey = formatChartMonth(
+            startOfMonth(parseISO(transaction.transactionDate)),
+        );
+        const entry = monthMap.get(monthKey);
+        if (!entry) {
+            return;
+        }
+        entry[category] =
+            (Number(entry[category]) || 0) + Math.abs(transaction.amount);
+    });
+
+    return {
+        categories,
+        data: series,
+    };
+};

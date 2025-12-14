@@ -16,7 +16,10 @@ export const ExpenseBarChart: React.FC<ExpenseBarChartProps> = ({
     dataFormatter
 }) => {
     return (
-        <div className="bg-gray-100 pt-4 rounded-lg shadow-lg">
+        <div
+            data-testid="expense-bar-chart"
+            className="rounded-lg bg-gray-100 pt-4 shadow-lg"
+        >
             <BarChart
                 data={chartData}
                 type={chartType as "default" | "percent" | "stacked" | undefined}

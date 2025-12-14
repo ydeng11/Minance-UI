@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {createPortal} from "react-dom";
 import {BoardColumn, BoardContainer, Column} from "./BoardColumn";
 import {
@@ -22,10 +22,17 @@ import {coordinateGetter} from "./multipleContainersKeyboardPreset";
 import {AddCategoryDialog} from "./AddCategoryDialog";
 import {useCategoryStore} from '@/store/categoryStore';
 import {Button} from "@/components/ui/button";
+import {Badge} from "@/components/ui/badge";
 import {useCategoryGroupQuery} from "@/services/queries/useCategoryGroupQuery";
 import {useCategoryGroupMutation} from "@/services/queries/useCategoryGroupMutation";
 import {toast} from "@/hooks/use-toast";
-import {CategoryMapping} from "@/services/apis/categoryMappingApis.tsx";
+import {
+    buildAssignmentSnapshot,
+    deriveCategoryMappingPayload,
+    listUnmappedCategories,
+    shouldEnableSaveButton,
+    type AssignmentSnapshot,
+} from "@/components/dndComponent/categoryBoardUtils";
 
 const defaultCols = [
     {
@@ -43,6 +50,8 @@ export type ColumnId = (typeof defaultCols)[number]["id"];
 export function BoardComponent() {
     const [columns, setColumns] = useState<Column[]>(defaultCols);
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [initialTasks, setInitialTasks] = useState<Task[]>([]);
+    const [initialSnapshot, setInitialSnapshot] = useState<AssignmentSnapshot>({});
     const [activeColumn, setActiveColumn] = useState<Column | null>(null);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -54,6 +63,13 @@ export function BoardComponent() {
         deleteCategoryGroupMutation
     } = useCategoryGroupMutation();
     const {unlinkedCategories, linkedCategories, allMinanceCategories} = useCategoryGroupQuery(selectedCategory);
+
+    const currentSnapshot = useMemo(() => buildAssignmentSnapshot(tasks), [tasks]);
+    const unmappedCategories = useMemo(() => listUnmappedCategories(tasks), [tasks]);
+    const canSave = Boolean(
+        selectedCategory && shouldEnableSaveButton(initialSnapshot, currentSnapshot)
+    );
+    const canUndo = shouldEnableSaveButton(initialSnapshot, currentSnapshot);
 
     const sensors = useSensors(
         useSensor(MouseSensor),
@@ -74,32 +90,26 @@ export function BoardComponent() {
         }
     }, [allMinanceCategories.data, selectedCategory, setMinanceCategories, setSelectedCategory]);
 
-    // Update tasks when unlinked categories change
     useEffect(() => {
-        if (unlinkedCategories.data) {
-            const unlinkedTasks: Task[] = unlinkedCategories.data.map((cat) => ({
-                id: cat.name,
-                content: cat.name,
-                columnId: "originalCat" as const
-            }));
-            setTasks(unlinkedTasks);
-        }
-    }, [unlinkedCategories.data]);
+        if (!unlinkedCategories.data || !linkedCategories.data) return;
 
-    // Update tasks when linked categories change
-    useEffect(() => {
-        if (linkedCategories.data) {
-            const linkedTasks: Task[] = linkedCategories.data.map((cat) => ({
-                id: cat.name,
-                content: cat.name,
-                columnId: "minanceCat" as const
-            }));
-            setTasks(prev => {
-                const unlinkedTasks = prev.filter(task => task.columnId === "originalCat");
-                return [...unlinkedTasks, ...linkedTasks];
-            });
-        }
-    }, [linkedCategories.data]);
+        const unlinkedTasks = unlinkedCategories.data.map((cat) => ({
+            id: cat.name,
+            content: cat.name,
+            columnId: "originalCat" as const,
+        }));
+
+        const linkedTasks = linkedCategories.data.map((cat) => ({
+            id: cat.name,
+            content: cat.name,
+            columnId: "minanceCat" as const,
+        }));
+
+        const combined = [...unlinkedTasks, ...linkedTasks];
+        setTasks(combined);
+        setInitialTasks(combined);
+        setInitialSnapshot(buildAssignmentSnapshot(combined));
+    }, [unlinkedCategories.data, linkedCategories.data]);
 
     const handleSaveCategory = () => {
         if (!selectedCategory) {
@@ -111,13 +121,23 @@ export function BoardComponent() {
             return;
         }
 
-        const tasksInMinanceCat = tasks.filter(task => task.columnId === "minanceCat");
-        const categoryMapping: CategoryMapping = {
-            listRawCategories: tasksInMinanceCat.map(task => task.id.toString()),
-            minanceCategory: selectedCategory
-        };
+        const payload = deriveCategoryMappingPayload(tasks, selectedCategory);
+        if (!payload) {
+            toast({
+                title: "No assignments",
+                description: "Drag categories into the Minance column before saving.",
+                variant: "destructive",
+            });
+            return;
+        }
 
-        updateCategoryGroupMutation(categoryMapping);
+        updateCategoryGroupMutation(payload);
+        setInitialTasks(tasks.map((task) => ({ ...task })));
+        setInitialSnapshot(buildAssignmentSnapshot(tasks));
+        toast({
+            title: "Grouping saved",
+            description: `${payload.listRawCategories.length} categories linked to ${selectedCategory}.`,
+        });
     };
 
 
@@ -135,6 +155,26 @@ export function BoardComponent() {
             category: selectedCategory
         });
     }
+
+    const handleResetAssignments = () => {
+        setTasks(initialTasks.map((task) => ({ ...task })));
+    };
+
+    const handleQuickAssign = (task: Task) => {
+        if (!selectedCategory) {
+            toast({
+                title: "Select a category",
+                description: "Choose a Minance category before assigning raw categories.",
+                variant: "destructive",
+            });
+            return;
+        }
+        setTasks((prev) =>
+            prev.map((existing) =>
+                existing.id === task.id ? { ...existing, columnId: "minanceCat" } : existing
+            )
+        );
+    };
 
     function boardTitle(category: string) {
 
@@ -157,11 +197,16 @@ export function BoardComponent() {
         } else {
             return (
                 <>
-                    <div className="flex justify-center mb-2 w-full max-w-md">
+                    <div className="flex justify-center mb-2 w-full max-w-md flex-col gap-1">
+                        <label htmlFor="minance-category-select" className="sr-only">
+                            Minance category
+                        </label>
                         <select
+                            id="minance-category-select"
                             className="border p-2 rounded bg-card text-gray-500 text-xl w-full text-center"
                             value={selectedCategory}
                             onChange={handleCategoryChange}
+                            data-testid="minance-category-select"
                         >
                             <option value="" disabled>Minance Cat</option>
                             {allMinanceCategories.data?.map((cat) => (
@@ -300,14 +345,16 @@ export function BoardComponent() {
             onDragEnd={onDragEnd}
             onDragOver={onDragOver}
         >
-            <BoardContainer>
+            <div data-testid="category-board">
+                <BoardContainer>
                 <SortableContext items={columns}>
                     {columns.map((col) => (
                         <div key={col.id} className="flex flex-col">
-                            {boardTitle(col.id.toString())}
+            {boardTitle(col.id.toString())}
                             <BoardColumn
                                 column={col}
                                 tasks={tasks.filter((task) => task.columnId === col.id)}
+                                    onAssignTask={col.id === "originalCat" ? handleQuickAssign : undefined}
                             />
                             {col.id === "minanceCat" ? (
                                 <div className="flex gap-2 justify-center mt-4 mb-2">
@@ -315,13 +362,24 @@ export function BoardComponent() {
                                         onClick={handleSaveCategory}
                                         variant="secondary"
                                         className="w-24"
+                                        data-testid="category-save-button"
+                                        disabled={!canSave}
                                     >
                                         Save
+                                    </Button>
+                                    <Button
+                                        onClick={handleResetAssignments}
+                                        variant="outline"
+                                        className="w-24"
+                                        disabled={!canUndo}
+                                    >
+                                        Undo
                                     </Button>
                                     <Button
                                         onClick={handleDeleteCategory}
                                         variant="destructive"
                                         className="w-24"
+                                        disabled={!selectedCategory}
                                     >
                                         Delete
                                     </Button>
@@ -332,7 +390,21 @@ export function BoardComponent() {
                         </div>
                     ))}
                 </SortableContext>
-            </BoardContainer>
+                </BoardContainer>
+            </div>
+
+            {unmappedCategories.length > 0 && (
+                <div className="mt-4 text-center text-sm text-muted-foreground">
+                    Unmapped categories:
+                    <div className="mt-2 flex flex-wrap justify-center gap-2">
+                        {unmappedCategories.map((category) => (
+                            <Badge key={category} variant="outline">
+                                {category}
+                            </Badge>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {"document" in window &&
                 createPortal(
@@ -383,18 +455,6 @@ export function BoardComponent() {
         const activeData = active.data.current;
 
         if (activeId === overId) return;
-
-        if (activeData?.type === "Task") {
-            const task = tasks.find(t => t.id === activeId);
-            if (task && task.columnId === "originalCat" && over.data.current?.type === "Column" && over.id === "minanceCat") {
-                const categoryName = task.content.split(" (")[0];
-                const categoryMapping: CategoryMapping = {
-                    listRawCategories: [categoryName],
-                    minanceCategory: selectedCategory
-                };
-                updateCategoryGroupMutation(categoryMapping);
-            }
-        }
 
         const isActiveAColumn = activeData?.type === "Column";
         if (isActiveAColumn) {

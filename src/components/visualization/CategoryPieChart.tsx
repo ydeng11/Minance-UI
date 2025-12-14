@@ -73,7 +73,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
     };
 
     return (
-        <Card className="bg-gray-100 rounded-lg shadow-lg mt-4">
+        <Card data-testid="category-pie-chart" className="mt-4 rounded-lg bg-gray-100 shadow-lg">
             <CardHeader>
                 <CardTitle className="text-lg font-medium">Expenses by Category</CardTitle>
             </CardHeader>
@@ -106,7 +106,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                             </div>
                         </>
                     ) : (
-                        <div className="text-center py-8 text-gray-500">
+                        <div className="py-8 text-center text-gray-500">
                             No data available for the selected categories
                         </div>
                     )}
