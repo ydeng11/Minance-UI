@@ -17,6 +17,7 @@ export interface Task {
 interface TaskCardProps {
     task: Task;
     isOverlay?: boolean;
+    onAssign?: (task: Task) => void;
 }
 
 export type TaskType = "Task";
@@ -26,7 +27,10 @@ export interface TaskDragData {
     task: Task;
 }
 
-export function TaskCard({task, isOverlay}: TaskCardProps) {
+const slugify = (value: UniqueIdentifier) =>
+    String(value).toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
+export function TaskCard({task, isOverlay, onAssign}: TaskCardProps) {
     const {
         setNodeRef,
         attributes,
@@ -59,10 +63,16 @@ export function TaskCard({task, isOverlay}: TaskCardProps) {
         },
     });
 
+    const slug = slugify(task.id);
+    const testId =
+        task.columnId === "originalCat" ? `raw-category-${slug}` : `linked-category-${slug}`;
+
     return (
         <Card
             ref={setNodeRef}
             style={style}
+            data-testid={testId}
+            data-category-name={task.content}
             className={variants({
                 dragging: isOverlay ? "overlay" : isDragging ? "over" : undefined,
             })}
@@ -80,6 +90,18 @@ export function TaskCard({task, isOverlay}: TaskCardProps) {
                 <Badge variant={"outline"} className="ml-2 font-semibold">
                     {task.id}
                 </Badge>
+                {onAssign && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto text-xs"
+                        data-testid={`move-category-${slug}`}
+                        onClick={() => onAssign(task)}
+                    >
+                        Move
+                    </Button>
+                )}
             </CardHeader>
 
         </Card>

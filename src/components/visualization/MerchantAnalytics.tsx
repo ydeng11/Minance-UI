@@ -1,8 +1,4 @@
-import React, { useMemo, useState } from 'react';
-import { useTransactionStore } from '@/store/transactionStore';
-import { useDateRangeQuery } from '@/services/queries/useDateRangeQuery';
-import { useImportStore } from '@/store/importStore';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DonutChart } from "@/components/analytics/DonutChart";
 import { Input } from "@/components/ui/input";
@@ -10,165 +6,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SearchIcon, XCircleIcon, PlusCircleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-type MerchantData = {
-    merchant: string;
-    totalSpent: number;
-    transactionCount: number;
-    averageAmount: number;
-    lastTransaction: string;
-    categories: Record<string, number>;
-}
+import { useMerchantAnalytics } from '@/hooks/useMerchantAnalytics';
 
 export const MerchantAnalytics: React.FC = () => {
-    const { data: queryTransactions } = useDateRangeQuery();
-    const { transactions } = useTransactionStore();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
-    const [excludedMerchants, setExcludedMerchants] = useState<string[]>([]);
+    const {
+        displayedMerchants,
+        selectedMerchantData,
+        topMerchants,
+        categoryChartData,
+        searchTerm,
+        setSearchTerm,
+        selectedMerchant,
+        setSelectedMerchant,
+        excludedMerchants,
+        setExcludedMerchants,
+        showOthersCategory,
+        handleShowOthersCategory,
+        othersMerchants,
+        resetFilters,
+        emptyStateMessage,
+    } = useMerchantAnalytics();
+
     const [exclusionInput, setExclusionInput] = useState('');
-    const [showOthersCategory, setShowOthersCategory] = useState(false);
-
-    // Get the query client for manual refetching
-    const queryClient = useQueryClient();
-
-    // Get the last import time to trigger refreshes
-    const lastImportTime = useImportStore(state => state.lastImportTime);
-
-    // Effect to refetch data when new transactions are imported
-    React.useEffect(() => {
-        if (lastImportTime > 0) {
-            queryClient.invalidateQueries({ queryKey: ['transactions'] });
-        }
-    }, [lastImportTime, queryClient]);
-
-    // Use query transactions if available, otherwise fall back to store
-    const currentTransactions = queryTransactions || transactions;
-
-    // Process merchant analytics data
-    const merchantData = useMemo(() => {
-        if (!currentTransactions || currentTransactions.length === 0) {
-            return [];
-        }
-
-        const merchantMap = new Map<string, MerchantData>();
-
-        // Group transactions by merchant/description
-        currentTransactions.forEach(transaction => {
-            // Use description as merchant name
-            const merchant = transaction.description;
-            if (!merchant) return;
-
-            // Skip excluded merchants
-            if (excludedMerchants.includes(merchant)) return;
-
-            // Skip transactions with no amount
-            if (transaction.amount === 0) return;
-
-            // Initialize merchant data if not exists
-            if (!merchantMap.has(merchant)) {
-                merchantMap.set(merchant, {
-                    merchant,
-                    totalSpent: 0,
-                    transactionCount: 0,
-                    averageAmount: 0,
-                    lastTransaction: transaction.transactionDate,
-                    categories: {}
-                });
-            }
-
-            const data = merchantMap.get(merchant)!;
-
-            // Increment merchant stats
-            data.totalSpent += Math.abs(transaction.amount);
-            data.transactionCount += 1;
-
-            // Track spending by category
-            const category = transaction.category || 'Uncategorized';
-            data.categories[category] = (data.categories[category] || 0) + Math.abs(transaction.amount);
-
-            // Update last transaction date if newer
-            if (new Date(transaction.transactionDate) > new Date(data.lastTransaction)) {
-                data.lastTransaction = transaction.transactionDate;
-            }
-        });
-
-        // Calculate average amount and convert to array
-        return Array.from(merchantMap.values())
-            .map(merchant => ({
-                ...merchant,
-                averageAmount: merchant.totalSpent / merchant.transactionCount
-            }))
-            .sort((a, b) => b.totalSpent - a.totalSpent); // Sort by total spent
-    }, [currentTransactions, excludedMerchants]);
-
-    // Filter merchants by search term
-    const displayedMerchants = useMemo(() => {
-        if (showOthersCategory) {
-            // When showing Others category, get merchants beyond top 10
-            return merchantData.slice(10);
-        }
-
-        // Otherwise use the regular filtered merchants
-        if (!searchTerm.trim()) return merchantData;
-        const lowerSearchTerm = searchTerm.toLowerCase().trim();
-        return merchantData.filter(m =>
-            m.merchant.toLowerCase().includes(lowerSearchTerm)
-        );
-    }, [merchantData, searchTerm, showOthersCategory]);
-
-    // Get data for selected merchant
-    const selectedMerchantData = useMemo(() => {
-        if (!selectedMerchant) return null;
-        return merchantData.find(m => m.merchant === selectedMerchant) || null;
-    }, [merchantData, selectedMerchant]);
-
-    // Top merchants for pie chart
-    const topMerchants = useMemo(() => {
-        const top = merchantData.slice(0, 10);
-        const othersMerchants = merchantData.slice(10);
-        const otherSum = othersMerchants.reduce((sum, m) => sum + m.totalSpent, 0);
-
-        const result = top.map(m => ({
-            merchant: m.merchant,
-            amount: m.totalSpent
-        }));
-
-        if (otherSum > 0) {
-            result.push({ merchant: 'Others', amount: otherSum });
-        }
-
-        return {
-            chartData: result,
-            othersMerchants: othersMerchants
-        };
-    }, [merchantData]);
-
-    // Format currency values
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('us', {
-            style: 'currency',
-            currency: 'USD',
-            maximumFractionDigits: 0,
-        }).format(amount);
-    };
-
-    // Format date values
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString();
-    };
-
-    // Get category chart data for selected merchant
-    const categoryChartData = useMemo(() => {
-        if (!selectedMerchantData) return [];
-
-        return Object.entries(selectedMerchantData.categories)
-            .map(([category, amount]) => ({
-                category,
-                amount
-            }))
-            .sort((a, b) => b.amount - a.amount);
-    }, [selectedMerchantData]);
 
     // Handle adding a merchant to exclusion list
     const handleAddExclusion = () => {
@@ -190,34 +49,38 @@ export const MerchantAnalytics: React.FC = () => {
         }
     };
 
-    // Filter to show only "Others" merchants
-    const handleShowOthersCategory = () => {
-        setShowOthersCategory(!showOthersCategory);
-        if (!showOthersCategory) {
-            // If turning on Others view, clear any existing search
-            setSearchTerm('');
-        }
+    // Format currency values
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('us', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0,
+        }).format(amount);
+    };
+
+    // Format date values
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString();
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <div data-testid="merchant-analytics-area" className="space-y-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
                 <div className="relative flex-1 max-w-sm">
-                    <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search merchants..."
-                        className="pl-8 text-gray-800"
+                        className="pl-8"
+                        data-testid="merchant-search-input"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        disabled={showOthersCategory}
                     />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                     <div className="relative flex-1">
                         <Input
                             placeholder="Add merchant to exclude..."
-                            className="text-gray-800"
                             value={exclusionInput}
                             onChange={(e) => setExclusionInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -229,9 +92,8 @@ export const MerchantAnalytics: React.FC = () => {
                         size="sm"
                         variant="outline"
                         onClick={handleAddExclusion}
-                        className="whitespace-nowrap text-gray-800 border-gray-300"
                     >
-                        <PlusCircleIcon className="h-4 w-4 mr-1" />
+                        <PlusCircleIcon className="mr-1 h-4 w-4" />
                         Add Filter
                     </Button>
 
@@ -240,18 +102,30 @@ export const MerchantAnalytics: React.FC = () => {
                             size="sm"
                             variant="outline"
                             onClick={handleExcludeSelected}
-                            className="whitespace-nowrap text-gray-800 border-gray-300"
                         >
-                            <XCircleIcon className="h-4 w-4 mr-1" />
+                            <XCircleIcon className="mr-1 h-4 w-4" />
                             Exclude Selected
                         </Button>
                     )}
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={resetFilters}
+                    >
+                        Reset Filters
+                    </Button>
                 </div>
             </div>
 
+            {emptyStateMessage && (
+                <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
+                    {emptyStateMessage}
+                </div>
+            )}
+
             {excludedMerchants.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="text-sm text-gray-500">Excluded merchants:</span>
+                    <span className="text-sm text-muted-foreground">Excluded merchants:</span>
                     {excludedMerchants.map(merchant => (
                         <Badge
                             key={merchant}
@@ -260,7 +134,7 @@ export const MerchantAnalytics: React.FC = () => {
                         >
                             {merchant}
                             <XCircleIcon
-                                className="h-3.5 w-3.5 cursor-pointer text-gray-500 hover:text-red-500"
+                                className="h-3.5 w-3.5 cursor-pointer text-muted-foreground hover:text-destructive"
                                 onClick={() => handleRemoveExclusion(merchant)}
                             />
                         </Badge>
@@ -270,18 +144,18 @@ export const MerchantAnalytics: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Merchant Spending Distribution */}
-                <Card className="bg-gray-100 rounded-lg shadow-lg">
+                <Card>
                     <CardHeader className="flex flex-col space-y-1">
                         <CardTitle className="text-lg font-medium">Top Merchants by Spending</CardTitle>
                         <div className="flex justify-between items-center">
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-muted-foreground">
                                 Showing top 10 merchants. "Others" combines all remaining merchants.
                             </div>
                             <Button
                                 size="sm"
                                 variant={showOthersCategory ? "default" : "outline"}
                                 onClick={handleShowOthersCategory}
-                                className={`text-xs ${showOthersCategory ? "bg-blue-600" : "text-gray-800 border-gray-300"}`}
+                                className="text-xs"
                             >
                                 {showOthersCategory ? "Show All Merchants" : "Show 'Others' Merchants"}
                             </Button>
@@ -301,30 +175,30 @@ export const MerchantAnalytics: React.FC = () => {
                 </Card>
 
                 {/* Merchant Details */}
-                <Card className="bg-gray-100 rounded-lg shadow-lg">
+                <Card>
                     <CardHeader>
                         <CardTitle className="text-lg font-medium">
                             {selectedMerchantData ? `${selectedMerchantData.merchant} Details` : 'Select a Merchant'}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent data-testid="merchant-detail-card">
                         {selectedMerchantData ? (
                             <div className="space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-white p-3 rounded-md">
-                                        <div className="text-sm text-gray-500">Total Spent</div>
+                                    <div className="bg-muted/50 p-3 rounded-md">
+                                        <div className="text-sm text-muted-foreground">Total Spent</div>
                                         <div className="text-xl font-bold">{formatCurrency(selectedMerchantData.totalSpent)}</div>
                                     </div>
-                                    <div className="bg-white p-3 rounded-md">
-                                        <div className="text-sm text-gray-500">Transactions</div>
+                                    <div className="bg-muted/50 p-3 rounded-md">
+                                        <div className="text-sm text-muted-foreground">Transactions</div>
                                         <div className="text-xl font-bold">{selectedMerchantData.transactionCount}</div>
                                     </div>
-                                    <div className="bg-white p-3 rounded-md">
-                                        <div className="text-sm text-gray-500">Average</div>
+                                    <div className="bg-muted/50 p-3 rounded-md">
+                                        <div className="text-sm text-muted-foreground">Average</div>
                                         <div className="text-xl font-bold">{formatCurrency(selectedMerchantData.averageAmount)}</div>
                                     </div>
-                                    <div className="bg-white p-3 rounded-md">
-                                        <div className="text-sm text-gray-500">Last Transaction</div>
+                                    <div className="bg-muted/50 p-3 rounded-md">
+                                        <div className="text-sm text-muted-foreground">Last Transaction</div>
                                         <div className="text-xl font-bold">{formatDate(selectedMerchantData.lastTransaction)}</div>
                                     </div>
                                 </div>
@@ -332,7 +206,7 @@ export const MerchantAnalytics: React.FC = () => {
                                 {/* Categories distribution */}
                                 <div>
                                     <h3 className="text-sm font-medium mb-2">Category Breakdown</h3>
-                                    <div className="bg-white p-3 rounded-md">
+                                    <div className="bg-muted/50 p-3 rounded-md">
                                         <div className="space-y-2">
                                             {categoryChartData.map(cat => (
                                                 <div key={cat.category} className="flex justify-between">
@@ -345,7 +219,7 @@ export const MerchantAnalytics: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center py-8 text-gray-500">
+                            <div className="text-center py-8 text-muted-foreground">
                                 Select a merchant from the table below to view details
                             </div>
                         )}
@@ -354,7 +228,7 @@ export const MerchantAnalytics: React.FC = () => {
             </div>
 
             {/* Merchant Table */}
-            <Card className="bg-gray-100 rounded-lg shadow-lg">
+            <Card>
                 <CardHeader>
                     <CardTitle className="text-lg font-medium">
                         {showOthersCategory
@@ -362,14 +236,19 @@ export const MerchantAnalytics: React.FC = () => {
                             : "Merchant Spending Analysis"}
                     </CardTitle>
                     {showOthersCategory && (
-                        <p className="text-sm text-gray-500">
-                            Showing merchants not in the top 10 (combined as "Others" in the chart)
-                        </p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <p>
+                                Showing merchants not in the top 10 (combined as "Others" in the chart)
+                            </p>
+                            <Badge data-testid="others-merchant-count" variant="secondary">
+                                {othersMerchants.length} merchants
+                            </Badge>
+                        </div>
                     )}
                 </CardHeader>
                 <CardContent>
                     <div className="rounded-md border">
-                        <Table>
+                        <Table data-testid="merchant-table">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Merchant</TableHead>
@@ -382,7 +261,7 @@ export const MerchantAnalytics: React.FC = () => {
                             <TableBody>
                                 {displayedMerchants.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-4 text-gray-500">
+                                        <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                                             No merchants found
                                         </TableCell>
                                     </TableRow>
@@ -390,7 +269,7 @@ export const MerchantAnalytics: React.FC = () => {
                                     displayedMerchants.slice(0, 20).map((merchant) => (
                                         <TableRow
                                             key={merchant.merchant}
-                                            className={`cursor-pointer hover:bg-gray-100 ${selectedMerchant === merchant.merchant ? 'bg-gray-100' : ''}`}
+                                            className={`cursor-pointer transition-colors hover:bg-muted/50 ${selectedMerchant === merchant.merchant ? 'bg-muted/50' : ''}`}
                                             onClick={() => setSelectedMerchant(merchant.merchant)}
                                         >
                                             <TableCell className="font-medium truncate max-w-[200px]">
@@ -415,7 +294,7 @@ export const MerchantAnalytics: React.FC = () => {
                         </Table>
                     </div>
                     {displayedMerchants.length > 20 && (
-                        <div className="text-center text-sm text-gray-500 mt-2">
+                        <div className="text-center text-sm text-muted-foreground mt-2">
                             Showing top 20 of {displayedMerchants.length} merchants
                         </div>
                     )}

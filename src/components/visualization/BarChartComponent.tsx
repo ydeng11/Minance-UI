@@ -1,177 +1,157 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTransactionStore } from '@/store/transactionStore';
 import { CategoryFilter } from './CategoryFilter';
 import { ExpenseBarChart } from './ExpenseBarChart';
 import { TotalExpenseChart } from './TotalExpenseChart';
 import { CategoryPieChart } from './CategoryPieChart';
-import { ChartDataItem } from '@/types/chart';
 import { useDateRangeQuery } from '@/services/queries/useDateRangeQuery';
 import { useImportStore } from '@/store/importStore';
 import { useQueryClient } from '@tanstack/react-query';
-
-// Key for storing selected categories in localStorage
-const SELECTED_CATEGORIES_KEY = 'bar-chart-selected-categories';
-// Key for storing chart type in localStorage
-const CHART_TYPE_KEY = 'bar-chart-type';
+import { buildMonthlyCategorySeries } from '@/lib/chartUtils';
+import { useVisualizationStore } from '@/store/visualizationStore';
 
 const BarChartComponent: React.FC = () => {
-    // Use the date range query to get updated transactions when date picker changes
-    const { data: queryTransactions, isLoading } = useDateRangeQuery();
+    const { data: queryTransactions, isLoading, isError, error } = useDateRangeQuery();
     const { transactions, setTransactions } = useTransactionStore();
-    const [categories, setCategories] = useState<string[]>([]);
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-    const [chartType, setChartType] = useState(() => {
-        // Initialize chart type from localStorage or default to "stacked"
-        return localStorage.getItem(CHART_TYPE_KEY) || "stacked";
-    });
-    const [hasSetInitialState, setHasSetInitialState] = useState(false);
+    const { chartType, setChartType, selectedCategories, setSelectedCategories } = useVisualizationStore();
+    const [hasInitialized, setHasInitialized] = useState(false);
 
-    // Get the query client for manual refetching
     const queryClient = useQueryClient();
-
-    // Get the last import time to trigger refreshes
     const lastImportTime = useImportStore(state => state.lastImportTime);
 
-    // Effect to refetch data when new transactions are imported
     useEffect(() => {
         if (lastImportTime > 0) {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
         }
     }, [lastImportTime, queryClient]);
 
-    // Update the transaction store when new data is fetched from date range query
     useEffect(() => {
         if (queryTransactions) {
             setTransactions(queryTransactions);
         }
     }, [queryTransactions, setTransactions]);
 
-    // Save selectedCategories to localStorage when it changes
-    useEffect(() => {
-        if (hasSetInitialState && selectedCategories.length > 0) {
-            localStorage.setItem(SELECTED_CATEGORIES_KEY, JSON.stringify(selectedCategories));
+    const currentTransactions = useMemo(() => queryTransactions || transactions, [queryTransactions, transactions]);
+
+    // Derive chart data using useMemo instead of useEffect + useState
+    const { categories, chartData } = useMemo(() => {
+        if (!currentTransactions || currentTransactions.length === 0) {
+            return { categories: [], chartData: [] };
         }
-    }, [selectedCategories, hasSetInitialState]);
+        const { categories: derivedCategories, data } = buildMonthlyCategorySeries(currentTransactions);
+        return { categories: derivedCategories, chartData: data };
+    }, [currentTransactions]);
 
-    // Save chartType to localStorage when it changes
+    // Initialize selected categories when data first arrives
     useEffect(() => {
-        localStorage.setItem(CHART_TYPE_KEY, chartType);
-    }, [chartType]);
-
-    useEffect(() => {
-        if (!transactions || transactions.length === 0) return;
-
-        const uniqueCategories = Array.from(
-            new Set(transactions.map(t => t.category || 'Uncategorized'))
-        );
-        setCategories(uniqueCategories);
-
-        // Try to load previously selected categories from localStorage
-        try {
-            const savedCategories = localStorage.getItem(SELECTED_CATEGORIES_KEY);
-            if (savedCategories) {
-                const parsedCategories = JSON.parse(savedCategories);
-                // Filter out any saved categories that don't exist in current data
-                const validCategories = parsedCategories.filter(
-                    (cat: string) => uniqueCategories.includes(cat)
-                );
-
-                if (validCategories.length > 0) {
-                    setSelectedCategories(validCategories);
-                } else {
-                    // If no valid categories found, use all categories
-                    setSelectedCategories(uniqueCategories);
-                }
-            } else {
-                // If no saved categories, use all categories
-                setSelectedCategories(uniqueCategories);
-            }
-        } catch (error) {
-            console.error("Error loading saved categories:", error);
-            setSelectedCategories(uniqueCategories);
+        // 1. Basic guard clauses
+        if (hasInitialized || categories.length === 0) {
+            return;
         }
 
-        setHasSetInitialState(true);
-    }, [transactions]);
+        // 2. Calculate the desired selection
+        const sanitized =
+            selectedCategories.length > 0
+                ? selectedCategories.filter((category) => categories.includes(category))
+                : categories;
 
-    const processTransactionData = useCallback(() => {
-        if (!transactions || transactions.length === 0) return [];
+        const newSelection = sanitized.length > 0 ? sanitized : categories;
 
-        const monthlyData = transactions.reduce((acc, transaction) => {
-            const [year, month] = transaction.transactionDate.split('-');
-            const monthYear = `${new Date(parseInt(year), parseInt(month) - 1).toLocaleString('default', { month: 'short' })} ${year.slice(2)}`;
+        // 3. CRITICAL FIX: Check if the update is actually necessary.
+        // We compare the sorted stringified versions to ensure content equality
+        // regardless of order or reference.
+        const isSameSelection =
+            selectedCategories.length === newSelection.length &&
+            selectedCategories.every((val, index) => val === newSelection[index]);
+        // Note: If order doesn't matter, you might want to sort before comparing,
+        // but usually visual consistency implies stable order.
 
-            if (!acc[monthYear]) {
-                acc[monthYear] = {};
-            }
+        if (isSameSelection) {
+            // If data is already correct, just mark initialized and exit
+            setHasInitialized(true);
+            return;
+        }
 
-            const category = transaction.category || 'Uncategorized';
-            acc[monthYear][category] = (acc[monthYear][category] || 0) + transaction.amount;
+        // 4. Only update store if data is truly different
+        queueMicrotask(() => {
+            setSelectedCategories(newSelection);
+            setHasInitialized(true);
+        });
+    }, [categories, hasInitialized, selectedCategories, setSelectedCategories]);
 
-            return acc;
-        }, {} as Record<string, Record<string, number>>);
-
-        return Object.entries(monthlyData).map(([date, categories]) => ({
-            date,
-            ...categories
-        }));
-    }, [transactions]);
-
-    useEffect(() => {
-        const data = processTransactionData();
-        setChartData(data);
-    }, [transactions, processTransactionData]);
-
-    // Custom wrapper for setSelectedCategories that also persists to localStorage
-    const handleSetSelectedCategories = (categories: string[]) => {
-        setSelectedCategories(categories);
-    };
-
-    // Custom wrapper for setChartType that also persists to localStorage
-    const handleSetChartType = (type: string) => {
-        setChartType(type);
-    };
-
-    const dataFormatter = (number: number) =>
+    const dataFormatter = (value: number) =>
         Intl.NumberFormat('us', {
             style: 'currency',
             currency: 'USD'
-        }).format(number);
+        }).format(value);
 
-    // Show loading state while data is being fetched
-    if (isLoading) {
-        return <div className="flex justify-center items-center h-64">Loading chart data...</div>;
-    }
+    const resolvedChartType = chartType === "percentage" ? "percent" : chartType;
+
+    // Determine what content to show
+    const showLoading = isLoading;
+    const showError = !isLoading && isError;
+    const showEmpty = !isLoading && !isError && chartData.length === 0;
+    const showCharts = !isLoading && !isError && chartData.length > 0;
 
     return (
         <div>
+            {/* CategoryFilter must ALWAYS render to maintain consistent hooks */}
             <CategoryFilter
                 chartType={chartType}
-                setChartType={handleSetChartType}
+                setChartType={setChartType}
                 categories={categories}
                 selectedCategories={selectedCategories}
-                setSelectedCategories={handleSetSelectedCategories}
-                hasSetInitialState={hasSetInitialState}
+                setSelectedCategories={setSelectedCategories}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="lg:col-span-2">
-                    <ExpenseBarChart
-                        chartData={chartData}
-                        chartType={chartType}
-                        selectedCategories={selectedCategories}
-                        dataFormatter={dataFormatter}
-                    />
+
+            {showLoading && (
+                <div
+                    data-testid="expense-charts-loading"
+                    className="flex h-64 items-center justify-center rounded-lg border bg-muted text-muted-foreground"
+                >
+                    Loading chart data…
                 </div>
-                <div className="lg:col-span-2">
-                    <TotalExpenseChart
-                        chartData={chartData}
-                        selectedCategories={selectedCategories}
-                        dataFormatter={dataFormatter}
-                    />
+            )}
+
+            {showError && (
+                <div
+                    data-testid="expense-charts-error"
+                    className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center text-destructive"
+                >
+                    Unable to load expense charts: {(error as Error)?.message ?? 'Unknown error'}
                 </div>
-                <div className="lg:col-span-2">
-                    <CategoryPieChart selectedCategories={selectedCategories} />
+            )}
+
+            {showEmpty && (
+                <div
+                    data-testid="expense-charts-empty"
+                    className="rounded-lg border bg-muted/40 p-8 text-center text-muted-foreground"
+                >
+                    No transactions available for the selected date range.
+                </div>
+            )}
+
+            {/* Always render chart components to maintain consistent hooks, but hide when not needed */}
+            <div style={{ display: showCharts ? 'block' : 'none' }}>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div className="lg:col-span-2">
+                        <ExpenseBarChart
+                            chartData={chartData}
+                            chartType={resolvedChartType}
+                            selectedCategories={selectedCategories}
+                            dataFormatter={dataFormatter}
+                        />
+                    </div>
+                    <div className="lg:col-span-2">
+                        <TotalExpenseChart
+                            chartData={chartData}
+                            selectedCategories={selectedCategories}
+                            dataFormatter={dataFormatter}
+                        />
+                    </div>
+                    <div className="lg:col-span-2">
+                        <CategoryPieChart selectedCategories={selectedCategories} />
+                    </div>
                 </div>
             </div>
         </div>

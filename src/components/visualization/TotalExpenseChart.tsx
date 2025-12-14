@@ -56,7 +56,10 @@ export const TotalExpenseChart: React.FC<TotalExpenseChartProps> = ({
     }, [chartData, selectedCategories]);
 
     return (
-        <div className="bg-gray-100 pt-4 rounded-lg shadow-lg mt-4">
+        <div
+            data-testid="total-expense-chart"
+            className="mt-4 rounded-lg bg-gray-100 pt-4 shadow-lg"
+        >
             {/* Percentage indicators above the chart */}
             <div className="mb-3 pl-[100px] pr-5 mx-auto">
                 <div

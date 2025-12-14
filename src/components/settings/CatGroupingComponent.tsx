@@ -2,18 +2,17 @@ import {BoardComponent} from "@/components/dndComponent/BoardComponent.tsx";
 
 function CatGroupingComponent() {
     return (
-        <>
-            <div className="min-h-screen flex flex-col">
-                <main className="mx-4 flex flex-col gap-6">
-                    <div className="flex items-center justify-center h-full">
-                        <h1 className="scroll-m-20 text-4xl text-gray-500 font-extrabold tracking-tight lg:text-5xl text-center">
-                            Cat Grouping
-                        </h1>
-                    </div>
-                    <BoardComponent/>
-                </main>
+        <div className="space-y-6">
+            <div className="space-y-1">
+                <h2 className="text-3xl font-bold tracking-tight">Category Grouping</h2>
+                <p className="text-muted-foreground">
+                    Organize your transaction categories into groups.
+                </p>
             </div>
-        </>
+            <div className="h-full">
+                <BoardComponent/>
+            </div>
+        </div>
     );
 }
 

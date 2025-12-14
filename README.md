@@ -51,6 +51,20 @@ Run tests:
 npm run test
 ```
 
+For a tight TDD loop, keep Vitest in watch mode:
+
+```bash
+npm run test -- --watch
+```
+
+Network calls in tests are intercepted by Mock Service Worker (see `src/test/setup.ts`), so suites stay deterministic without needing the Quarkus backend.
+
+Component-level visual checks use Playwright Component Testing:
+
+```bash
+npm run test:ct
+```
+
 ## Project Structure
 
 ```

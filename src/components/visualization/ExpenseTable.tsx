@@ -9,6 +9,7 @@ import { useDateRangeQuery } from '@/services/queries/useDateRangeQuery';
 import { useDateRangeStore } from '@/store/dateRangeStore';
 import { useImportStore } from '@/store/importStore';
 import { useQueryClient } from '@tanstack/react-query';
+import { Button } from "@/components/ui/button";
 
 // Filter state storage key
 const FILTER_STATE_KEY = 'expense-table-filter-state';
@@ -222,36 +223,40 @@ export function ExpenseTable() {
     }
 
     return (
-        <div className="w-full bg-card rounded-md border border-border shadow-sm relative overflow-hidden">
-            <div className="flex justify-end p-2">
-                {selectedRows.length > 0 && (
-                    <button
+        <div className="w-full relative overflow-hidden space-y-4">
+            {selectedRows.length > 0 && (
+                <div className="flex justify-end">
+                    <Button
                         onClick={deleteSelectedRows}
-                        className="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600 transition"
+                        variant="destructive"
+                        size="sm"
                     >
                         Delete Selected ({selectedRows.length})
-                    </button>
-                )}
-            </div>
-            <div className="w-full overflow-x-auto">
-                <div className="ag-theme-alpine w-full h-full">
-                    <AgGridReact
-                        ref={gridRef}
-                        rowData={transactions}
-                        columnDefs={columnDefs}
-                        defaultColDef={defaultColDef}
-                        animateRows={true}
-                        rowSelection={{ mode: 'multiRow' }}
-                        pagination={true}
-                        paginationPageSize={20}
-                        suppressMenuHide={true}
-                        domLayout="autoHeight"
-                        onSelectionChanged={onSelectionChanged}
-                        onCellValueChanged={onCellValueChanged}
-                        onGridReady={onGridReady}
-                        onFilterChanged={onFilterChanged}
-                    />
+                    </Button>
                 </div>
+            )}
+            <div
+                className="ag-theme-alpine w-full"
+                data-testid="expense-table"
+                aria-label="Expense table"
+                role="table"
+            >
+                <AgGridReact
+                    ref={gridRef}
+                    rowData={transactions}
+                    columnDefs={columnDefs}
+                    defaultColDef={defaultColDef}
+                    animateRows={true}
+                    rowSelection={{ mode: 'multiRow' }}
+                    pagination={true}
+                    paginationPageSize={20}
+                    suppressMenuHide={true}
+                    domLayout="autoHeight"
+                    onSelectionChanged={onSelectionChanged}
+                    onCellValueChanged={onCellValueChanged}
+                    onGridReady={onGridReady}
+                    onFilterChanged={onFilterChanged}
+                />
             </div>
         </div>
     );

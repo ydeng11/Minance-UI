@@ -1,15 +1,15 @@
 import React from 'react';
-import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group.tsx";
-import {Label} from "@/components/ui/label.tsx";
-import {MultiSelect} from "@/components/ui/multi-select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group.tsx";
+import { Label } from "@/components/ui/label.tsx";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { ChartType } from '@/store/visualizationStore';
 
 interface CategoryFilterProps {
-    chartType: string;
-    setChartType: (value: string) => void;
+    chartType: ChartType;
+    setChartType: (value: ChartType) => void;
     categories: string[];
     selectedCategories: string[];
     setSelectedCategories: (categories: string[]) => void;
-    hasSetInitialState: boolean;
 }
 
 export const CategoryFilter: React.FC<CategoryFilterProps> = ({
@@ -18,7 +18,6 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
     categories,
     selectedCategories,
     setSelectedCategories,
-    hasSetInitialState
 }) => {
     const categoryOptions = categories.map(category => ({
         label: category,
@@ -26,33 +25,36 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
     }));
 
     return (
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <RadioGroup
                 value={chartType}
-                className="flex space-x-4"
+                className="flex flex-wrap gap-4"
                 onValueChange={setChartType}
+                aria-label="Expense chart display mode"
             >
                 <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="percent" id="percent"/>
-                    <Label htmlFor="percent" className="text-gray-900 font-medium">Use Percentage</Label>
+                    <RadioGroupItem value="stacked" id="stacked" />
+                    <Label htmlFor="stacked" className="text-sm font-medium">
+                        Stacked
+                    </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="stacked" id="stacked"/>
-                    <Label htmlFor="stacked" className="text-gray-900 font-medium">Use Stack</Label>
+                    <RadioGroupItem value="percentage" id="percentage" />
+                    <Label htmlFor="percentage" className="text-sm font-medium">
+                        Percentage
+                    </Label>
                 </div>
             </RadioGroup>
 
-            {hasSetInitialState && (
-                <MultiSelect
-                    options={categoryOptions}
-                    onValueChange={setSelectedCategories}
-                    defaultValue={selectedCategories}
-                    placeholder="Select categories"
-                    variant="inverted"
-                    animation={2}
-                    maxCount={5}
-                />
-            )}
+            <MultiSelect
+                options={categoryOptions}
+                onValueChange={setSelectedCategories}
+                defaultValue={selectedCategories}
+                placeholder={categories.length === 0 ? "Loading..." : "Select categories"}
+                variant="inverted"
+                animation={2}
+                maxCount={5}
+            />
         </div>
     );
 };
