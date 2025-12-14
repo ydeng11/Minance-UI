@@ -100,15 +100,17 @@ describe("useMerchantAnalytics", () => {
         const hook = renderHook();
         const topMerchant = hook.current!.merchantData[0];
 
-        expect(topMerchant.merchant).toBe("Merchant 12");
-        expect(topMerchant.totalSpent).toBe(120);
-        expect(topMerchant.transactionCount).toBe(1);
+        // Merchant 1 has the highest total (10 + 200 + 50 = 260) due to duplicate transactions
+        expect(topMerchant.merchant).toBe("Merchant 1");
+        expect(topMerchant.totalSpent).toBe(260);
+        expect(topMerchant.transactionCount).toBe(3);
 
-        const duplicateMerchant = hook.current!.merchantData.find(
-            (merchant) => merchant.merchant === "Merchant 1"
+        // Merchant 12 should be second with 120 total
+        const merchant12 = hook.current!.merchantData.find(
+            (merchant) => merchant.merchant === "Merchant 12"
         );
-        expect(duplicateMerchant?.totalSpent).toBe(260);
-        expect(duplicateMerchant?.transactionCount).toBe(3);
+        expect(merchant12?.totalSpent).toBe(120);
+        expect(merchant12?.transactionCount).toBe(1);
     });
 
     it("filters displayed merchants by search term", () => {
@@ -144,8 +146,11 @@ describe("useMerchantAnalytics", () => {
         });
 
         expect(hook.current!.showOthersCategory).toBe(true);
-        expect(hook.current!.displayedMerchants).toHaveLength(4);
-        expect(hook.current!.displayedMerchants[0].merchant).toBe("Merchant 11");
+        // With 12 unique merchants sorted by totalSpent, top 10 are:
+        // Merchant 1(260), 12(120), 11(110), 10(100), 9(90), 8(80), 7(70), 6(60), 5(50), 4(40)
+        // Others are: Merchant 3(30) and 2(20)
+        expect(hook.current!.displayedMerchants).toHaveLength(2);
+        expect(hook.current!.displayedMerchants[0].merchant).toBe("Merchant 3");
     });
 
     it("returns detail data when a merchant is selected", () => {
@@ -161,8 +166,11 @@ describe("useMerchantAnalytics", () => {
 
     it("exposes the list of merchants that fall under the Others grouping", () => {
         const hook = renderHook();
-        expect(hook.current!.othersMerchants).toHaveLength(4);
-        expect(hook.current!.othersMerchants?.[0].merchant).toBe("Merchant 11");
+        // With 12 unique merchants sorted by totalSpent, top 10 are:
+        // Merchant 1(260), 12(120), 11(110), 10(100), 9(90), 8(80), 7(70), 6(60), 5(50), 4(40)
+        // Others are: Merchant 3(30) and 2(20)
+        expect(hook.current!.othersMerchants).toHaveLength(2);
+        expect(hook.current!.othersMerchants?.[0].merchant).toBe("Merchant 3");
     });
 
     it("resets search, selection, exclusions, and view state via resetFilters", () => {

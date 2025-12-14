@@ -103,6 +103,11 @@ describe("AccountManager", () => {
         expect(screen.getByTestId("account-form-mock")).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole("button", { name: /submit mock/i }));
-        expect(createAccountMutation).toHaveBeenCalledWith(mockFormValues);
+        // The buildAccountPayload function adds accountId and bankId fields
+        expect(createAccountMutation).toHaveBeenCalledWith({
+            accountId: 0,
+            bankId: 0,
+            ...mockFormValues,
+        });
     });
 });
