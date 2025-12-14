@@ -31,6 +31,7 @@ import { useBankAndAccountTypeQuery } from "@/services/queries/useBankAndAccount
 import { Card } from "@/components/ui/card";
 import { AccountForm, type AccountFormValues } from "@/components/settings/AccountForm";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const columns: ColumnDef<Account>[] = [
     {
         accessorKey: "bankName",

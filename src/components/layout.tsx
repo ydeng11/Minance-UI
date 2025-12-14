@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 // Since Sheet is missing, I will stick to desktop-first for this step or just use a simple state for mobile menu if I don't add Sheet.
 
 const Layout: React.FC = () => {
-    const setDateRange = useDateRangeStore((state: { setDateRange: any; }) => state.setDateRange);
+    const setDateRange = useDateRangeStore((state: { setDateRange: (from: string, to: string) => void }) => state.setDateRange);
     const location = useLocation();
 
     const currentHeader = React.useMemo(() => {

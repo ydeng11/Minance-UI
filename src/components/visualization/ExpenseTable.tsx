@@ -21,7 +21,7 @@ export function ExpenseTable() {
     const { setTransactions } = useTransactionStore();
     const dateRangeStore = useDateRangeStore();
     const [selectedRows, setSelectedRows] = React.useState<Transaction[]>([]);
-    const [filterState, setFilterState] = React.useState<any>(null);
+    const [filterState, setFilterState] = React.useState<Record<string, unknown> | null>(null);
     const isInitialRender = React.useRef(true);
 
     // Get the query client for manual refetching
@@ -123,12 +123,14 @@ export function ExpenseTable() {
 
     // Save filters when component unmounts
     React.useEffect(() => {
+        const gridApi = gridRef.current?.api;
         return () => {
-            if (gridRef.current?.api) {
-                saveFilterState();
+            if (gridApi) {
+                const currentFilterModel = gridApi.getFilterModel();
+                localStorage.setItem(FILTER_STATE_KEY, JSON.stringify(currentFilterModel));
             }
         };
-    }, [saveFilterState]);
+    }, []);
 
     const onFilterChanged = React.useCallback(() => {
         saveFilterState();

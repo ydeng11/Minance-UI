@@ -54,7 +54,7 @@ describe("useMerchantAnalytics", () => {
         transactions = [...buildTransactions(), ...duplicateTransactions];
         dateRangeSpy = vi.spyOn(dateRangeQuery, "useDateRangeQuery").mockReturnValue({
             data: transactions,
-        } as any);
+        } as ReturnType<typeof dateRangeQuery.useDateRangeQuery>);
 
         storeSpy = vi.spyOn(transactionStore, "useTransactionStore").mockReturnValue({
             transactions,
@@ -192,11 +192,11 @@ describe("useMerchantAnalytics", () => {
 
     it("reports lack of transactions when the dataset is empty", () => {
         transactions = [];
-        dateRangeSpy.mockReturnValue({ data: [] } as any);
+        dateRangeSpy.mockReturnValue({ data: [] } as ReturnType<typeof dateRangeQuery.useDateRangeQuery>);
         storeSpy.mockReturnValue({
             transactions,
             setTransactions: vi.fn(),
-        } as any);
+        } as ReturnType<typeof transactionStore.useTransactionStore>);
 
         const hook = renderHook();
         expect(hook.current!.hasTransactions).toBe(false);

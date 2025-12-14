@@ -5,7 +5,12 @@ import { AccountForm, type AccountFormValues } from "../AccountForm";
 
 vi.mock("@/components/ui/select", () => {
     // Create a controlled select component that properly handles value changes
-    const MockSelect = React.forwardRef(({ value, onValueChange, children, "data-testid": testId }: any, ref: any) => {
+    const MockSelect = React.forwardRef<HTMLSelectElement, {
+        value?: string;
+        onValueChange?: (value: string) => void;
+        children?: React.ReactNode;
+        "data-testid"?: string;
+    }>(({ value, onValueChange, children, "data-testid": testId }, ref) => {
         const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
             const newValue = event.target.value;
             // Immediately call onValueChange to update parent state
@@ -28,14 +33,14 @@ vi.mock("@/components/ui/select", () => {
 
     return {
         Select: MockSelect,
-        SelectTrigger: ({ children, id, ...props }: any) => (
+        SelectTrigger: ({ children, id, ...props }: { children?: React.ReactNode; id?: string; [key: string]: unknown }) => (
             <div id={id} {...props}>{children}</div>
         ),
-        SelectContent: ({ children }: any) => <>{children}</>,
-        SelectItem: ({ value, children }: any) => (
+        SelectContent: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+        SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => (
             <option value={value}>{children}</option>
         ),
-        SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
+        SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
     };
 });
 

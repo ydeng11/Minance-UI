@@ -14,8 +14,17 @@ The frontend application for Minance, built with React, TypeScript, and Vite.
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- Node.js 20+ (match the CI environment)
+- npm 10.x (important: npm version matters for lockfile consistency)
+
+> **Note**: This project uses npm 10.x in CI. Using a different npm version locally (e.g., npm 11.x) can cause `package-lock.json` to resolve dependencies differently, leading to CI failures. If you're using Node.js 20, it comes with npm 10.x by default. To check your versions:
+>
+> ```bash
+> node --version  # Should be v20.x
+> npm --version   # Should be 10.x
+> ```
+>
+> If you have npm 11 or higher, you can use `npx -y --package=npm@10 npm install` to ensure lockfile compatibility with CI.
 
 ### Getting Started
 

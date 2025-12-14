@@ -18,26 +18,26 @@ vi.mock('@/services/queries/useDateRangeQuery', () => ({
 
 // Mock UI components to isolate logic and avoid render issues
 vi.mock('./button', () => ({
-    Button: ({ children, onClick }: any) => React.createElement('button', { onClick }, children)
+    Button: ({ children, onClick }: { children?: React.ReactNode; onClick?: () => void }) => React.createElement('button', { onClick }, children)
 }))
 
 vi.mock('./popover', () => ({
-    Popover: ({ children, open, onOpenChange }: any) => (
+    Popover: ({ children, open, onOpenChange }: { children?: React.ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void }) => (
         React.createElement('div', { 'data-testid': 'popover' },
             children,
-            open && React.createElement('div', { 'data-testid': 'popover-content-wrapper', onClick: () => onOpenChange(false) })
+            open && React.createElement('div', { 'data-testid': 'popover-content-wrapper', onClick: () => onOpenChange?.(false) })
         )
     ),
-    PopoverTrigger: ({ children }: any) => React.createElement('div', { 'data-testid': 'popover-trigger' }, children),
-    PopoverContent: ({ children }: any) => React.createElement('div', { 'data-testid': 'popover-content' }, children),
+    PopoverTrigger: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'popover-trigger' }, children),
+    PopoverContent: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'popover-content' }, children),
 }))
 
 vi.mock('./calendar', () => ({
-    Calendar: ({ onSelect, defaultMonth }: any) => (
+    Calendar: ({ onSelect, defaultMonth }: { onSelect?: (date: Date) => void; defaultMonth?: Date }) => (
         React.createElement('div', { 'data-testid': 'calendar' },
             React.createElement('button', {
                 'data-testid': 'calendar-select-date',
-                onClick: () => onSelect(new Date('2023-02-01'))
+                onClick: () => onSelect?.(new Date('2023-02-01'))
             }, 'Select Date'),
             React.createElement('span', {}, `Current Month: ${defaultMonth?.toString()}`)
         )
@@ -49,14 +49,14 @@ vi.mock('./date-input', () => ({
 }))
 
 vi.mock('./label', () => ({
-    Label: ({ children }: any) => React.createElement('label', {}, children)
+    Label: ({ children }: { children?: React.ReactNode }) => React.createElement('label', {}, children)
 }))
 
 vi.mock('./select', () => ({
-    Select: ({ children }: any) => React.createElement('div', { 'data-testid': 'select' }, children),
-    SelectContent: ({ children }: any) => React.createElement('div', {}, children),
-    SelectItem: ({ children }: any) => React.createElement('div', {}, children),
-    SelectTrigger: ({ children }: any) => React.createElement('div', {}, children),
+    Select: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'select' }, children),
+    SelectContent: ({ children }: { children?: React.ReactNode }) => React.createElement('div', {}, children),
+    SelectItem: ({ children }: { children?: React.ReactNode }) => React.createElement('div', {}, children),
+    SelectTrigger: ({ children }: { children?: React.ReactNode }) => React.createElement('div', {}, children),
     SelectValue: () => React.createElement('span', {}, 'Select Value'),
 }))
 
@@ -83,7 +83,7 @@ describe('DateRangePicker', () => {
             data: [],
             isLoading: false,
             isError: false
-        } as any)
+        } as ReturnType<typeof dateRangeQuery.useDateRangeQuery>)
     })
 
     afterEach(() => {

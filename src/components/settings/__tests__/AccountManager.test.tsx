@@ -34,7 +34,7 @@ const mockFormValues = {
 const accountFormSubmit = vi.fn();
 
 vi.mock("../AccountForm", () => ({
-    AccountForm: (props: any) => {
+    AccountForm: (props: { onSubmit: (values: typeof mockFormValues) => void }) => {
         accountFormSubmit.mockImplementation(() => props.onSubmit(mockFormValues));
         return (
             <div data-testid="account-form-mock">
