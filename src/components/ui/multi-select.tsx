@@ -1,14 +1,14 @@
 // src/components/multi-select.tsx
 
 import * as React from "react";
-import {cva, type VariantProps} from "class-variance-authority";
-import {CheckIcon, ChevronDown, WandSparkles, XCircle, XIcon,} from "lucide-react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { CheckIcon, ChevronDown, WandSparkles, XCircle, XIcon, } from "lucide-react";
 
-import {cn} from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Popover, PopoverContent, PopoverTrigger,} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
 import {
     Command,
     CommandEmpty,
@@ -18,7 +18,7 @@ import {
     CommandList,
     CommandSeparator,
 } from "@/components/ui/command";
-import {Separator} from "@/components/ui/separator.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
 
 /**
  * Variants for the multi-select component to handle different styles.
@@ -49,7 +49,7 @@ const multiSelectVariants = cva(
  */
 interface MultiSelectProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-        VariantProps<typeof multiSelectVariants> {
+    VariantProps<typeof multiSelectVariants> {
     /**
      * An array of option objects to be displayed in the multi-select component.
      * Each option object has a label, value, and an optional icon.
@@ -208,12 +208,12 @@ export const MultiSelect = React.forwardRef<
                                                 key={value}
                                                 className={cn(
                                                     isAnimating ? "animate-bounce" : "",
-                                                    multiSelectVariants({variant})
+                                                    multiSelectVariants({ variant })
                                                 )}
-                                                style={{animationDuration: `${animation}s`}}
+                                                style={{ animationDuration: `${animation}s` }}
                                             >
                                                 {IconComponent && (
-                                                    <IconComponent className="h-4 w-4 mr-2"/>
+                                                    <IconComponent className="h-4 w-4 mr-2" />
                                                 )}
                                                 {option?.label}
                                                 <XCircle
@@ -231,9 +231,9 @@ export const MultiSelect = React.forwardRef<
                                             className={cn(
                                                 "bg-transparent text-foreground border-foreground/1 hover:bg-transparent",
                                                 isAnimating ? "animate-bounce" : "",
-                                                multiSelectVariants({variant})
+                                                multiSelectVariants({ variant })
                                             )}
-                                            style={{animationDuration: `${animation}s`}}
+                                            style={{ animationDuration: `${animation}s` }}
                                         >
                                             {`+ ${selectedValues.length - maxCount} more`}
                                             <XCircle
@@ -258,15 +258,15 @@ export const MultiSelect = React.forwardRef<
                                         orientation="vertical"
                                         className="flex min-h-6 h-full"
                                     />
-                                    <ChevronDown className="h-4 mx-2 cursor-pointer text-muted-foreground"/>
+                                    <ChevronDown className="h-4 mx-2 cursor-pointer text-muted-foreground" />
                                 </div>
                             </div>
                         ) : (
                             <div className="flex items-center justify-between w-full mx-auto">
-                <span className="text-sm text-muted-foreground mx-3">
-                  {placeholder}
-                </span>
-                                <ChevronDown className="h-4 cursor-pointer text-muted-foreground mx-2"/>
+                                <span className="text-sm text-muted-foreground mx-3">
+                                    {placeholder}
+                                </span>
+                                <ChevronDown className="h-4 cursor-pointer text-muted-foreground mx-2" />
                             </div>
                         )}
                     </Button>
@@ -297,7 +297,7 @@ export const MultiSelect = React.forwardRef<
                                                 : "opacity-50 [&_svg]:invisible"
                                         )}
                                     >
-                                        <CheckIcon className="h-4 w-4"/>
+                                        <CheckIcon className="h-4 w-4" />
                                     </div>
                                     <span>(Select All)</span>
                                 </CommandItem>
@@ -306,6 +306,7 @@ export const MultiSelect = React.forwardRef<
                                     return (
                                         <CommandItem
                                             key={option.value}
+                                            value={option.value}
                                             onSelect={() => toggleOption(option.value)}
                                             className="cursor-pointer"
                                         >
@@ -317,17 +318,17 @@ export const MultiSelect = React.forwardRef<
                                                         : "opacity-50 [&_svg]:invisible"
                                                 )}
                                             >
-                                                <CheckIcon className="h-4 w-4"/>
+                                                <CheckIcon className="h-4 w-4" />
                                             </div>
                                             {option.icon && (
-                                                <option.icon className="mr-2 h-4 w-4 text-muted-foreground"/>
+                                                <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
                                             )}
                                             <span>{option.label}</span>
                                         </CommandItem>
                                     );
                                 })}
                             </CommandGroup>
-                            <CommandSeparator/>
+                            <CommandSeparator />
                             <CommandGroup>
                                 <div className="flex items-center justify-between">
                                     {selectedValues.length > 0 && (
