@@ -1,11 +1,11 @@
-import {SortableContext, useSortable} from "@dnd-kit/sortable";
-import {type UniqueIdentifier, useDndContext} from "@dnd-kit/core";
-import {CSS} from "@dnd-kit/utilities";
-import {useMemo} from "react";
-import {Task, TaskCard} from "./TaskCard";
-import {cva} from "class-variance-authority";
-import {Card, CardContent} from "@/components/ui/card.tsx";
-import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area.tsx";
+import { SortableContext, useSortable } from "@dnd-kit/sortable";
+import { type UniqueIdentifier, useDndContext } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { useMemo } from "react";
+import { Task, TaskCard } from "./TaskCard";
+import { cva } from "class-variance-authority";
+import { Card, CardContent } from "@/components/ui/card.tsx";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area.tsx";
 
 export interface Column {
     id: UniqueIdentifier;
@@ -24,9 +24,12 @@ interface BoardColumnProps {
     tasks: Task[];
     isOverlay?: boolean;
     onAssignTask?: (task: Task) => void;
+    selectedTasks?: Set<string>;
+    onToggleSelect?: (taskId: string) => void;
+    showCheckboxes?: boolean;
 }
 
-export function BoardColumn({column, tasks, isOverlay, onAssignTask}: BoardColumnProps) {
+export function BoardColumn({ column, tasks, isOverlay, onAssignTask, selectedTasks, onToggleSelect, showCheckboxes }: BoardColumnProps) {
     const tasksIds = useMemo(() => {
         return tasks.map((task) => task.id);
     }, [tasks]);
@@ -53,7 +56,7 @@ export function BoardColumn({column, tasks, isOverlay, onAssignTask}: BoardColum
     };
 
     const variants = cva(
-        "h-[500px] max-h-[500px] w-[350px] max-w-full bg-primary-foreground flex flex-col flex-shrink-0 snap-center",
+        "flex flex-col flex-1 min-w-0",
         {
             variants: {
                 dragging: {
@@ -73,14 +76,17 @@ export function BoardColumn({column, tasks, isOverlay, onAssignTask}: BoardColum
                 dragging: isOverlay ? "overlay" : isDragging ? "over" : undefined,
             })}
         >
-            <ScrollArea>
-                <CardContent className="flex flex-grow flex-col gap-2 p-2">
+            <ScrollArea className="h-[calc(100vh-20rem)]">
+                <CardContent className="flex flex-col gap-2 p-3">
                     <SortableContext items={tasksIds}>
                         {tasks.map((task) => (
                             <TaskCard
                                 key={task.id}
                                 task={task}
                                 onAssign={column.id === "originalCat" ? onAssignTask : undefined}
+                                isSelected={selectedTasks?.has(String(task.id))}
+                                onToggleSelect={onToggleSelect}
+                                showCheckbox={showCheckboxes}
                             />
                         ))}
                     </SortableContext>
@@ -90,28 +96,27 @@ export function BoardColumn({column, tasks, isOverlay, onAssignTask}: BoardColum
     );
 }
 
-export function BoardContainer({children}: { children: React.ReactNode }) {
+export function BoardContainer({ children }: { children: React.ReactNode }) {
     const dndContext = useDndContext();
 
-    const variations = cva("px-2 md:px-0 flex lg:justify-center pb-4", {
+    const variations = cva("w-full", {
         variants: {
             dragging: {
-                default: "snap-x snap-mandatory",
-                active: "snap-none",
+                default: "",
+                active: "cursor-grabbing",
             },
         },
     });
 
     return (
-        <ScrollArea
+        <div
             className={variations({
                 dragging: dndContext.active ? "active" : "default",
             })}
         >
-            <div className="flex gap-4 items-center flex-row justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 {children}
             </div>
-            <ScrollBar orientation="horizontal"/>
-        </ScrollArea>
+        </div>
     );
 }
