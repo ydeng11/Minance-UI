@@ -6,7 +6,11 @@ import { MultiSelect } from './multi-select'
 
 // Keep cmdk-based Command real; mock Radix/visual-only wrappers for stability.
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, ...props }: any) => (
+  Button: ({
+    children,
+    onClick,
+    ...props
+  }: React.PropsWithChildren<React.ButtonHTMLAttributes<HTMLButtonElement>>) => (
     <button onClick={onClick} {...props}>
       {children}
     </button>
@@ -14,20 +18,27 @@ vi.mock('@/components/ui/button', () => ({
 }))
 
 vi.mock('@/components/ui/badge', () => ({
-  Badge: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+  Badge: ({
+    children,
+    ...props
+  }: React.PropsWithChildren<React.HTMLAttributes<HTMLSpanElement>>) => (
+    <span {...props}>{children}</span>
+  ),
 }))
 
 vi.mock('@/components/ui/separator.tsx', () => ({
-  Separator: (props: any) => <div data-testid="separator" {...props} />,
+  Separator: (props: React.HTMLAttributes<HTMLDivElement>) => (
+    <div data-testid="separator" {...props} />
+  ),
 }))
 
 vi.mock('lucide-react', () => ({
-  Search: (props: any) => <span {...props} />,
-  CheckIcon: (props: any) => <span {...props} />,
-  ChevronDown: (props: any) => <span {...props} />,
-  WandSparkles: (props: any) => <span {...props} />,
-  XCircle: (props: any) => <span {...props} />,
-  XIcon: (props: any) => <span {...props} />,
+  Search: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+  CheckIcon: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+  ChevronDown: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+  WandSparkles: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+  XCircle: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+  XIcon: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
 }))
 
 vi.mock('@/components/ui/popover', async () => {
@@ -35,13 +46,16 @@ vi.mock('@/components/ui/popover', async () => {
 
   const Ctx = React.createContext<{ open: boolean }>({ open: false })
 
-  const Popover = ({ children, open }: any) => (
+  const Popover = ({
+    children,
+    open,
+  }: React.PropsWithChildren<{ open?: boolean }>) => (
     <Ctx.Provider value={{ open: !!open }}>{children}</Ctx.Provider>
   )
 
-  const PopoverTrigger = ({ children }: any) => <>{children}</>
+  const PopoverTrigger = ({ children }: React.PropsWithChildren) => <>{children}</>
 
-  const PopoverContent = ({ children }: any) => {
+  const PopoverContent = ({ children }: React.PropsWithChildren) => {
     const { open } = React.useContext(Ctx)
     if (!open) return null
     return <div data-testid="popover-content">{children}</div>
