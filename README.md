@@ -1,4 +1,8 @@
-# Minance Frontend
+# ⚠️ ARCHIVED - Minance Frontend
+
+> **This repository is archived and no longer maintained.** This project has been merged into the main [Minance repository](https://github.com/ydeng11/Minance). Please refer to that repository for the latest version of the project.
+
+---
 
 The frontend application for Minance, built with React, TypeScript, and Vite.
 
