@@ -32,7 +32,7 @@ describe("BoardComponent Auto-save", () => {
         });
 
         // Mock the query hook
-        vi.spyOn(categoryGroupQuery, "useCategoryGroupQuery").mockReturnValue({
+        const mockCategoryGroupQueryReturn = {
             unlinkedCategories: {
                 data: [
                     { name: "Groceries" },
@@ -50,14 +50,22 @@ describe("BoardComponent Auto-save", () => {
                     { MCategoryId: "2", category: "Travel" },
                 ],
             },
-        } as any);
+        } as unknown as ReturnType<typeof categoryGroupQuery.useCategoryGroupQuery>;
+
+        vi.spyOn(categoryGroupQuery, "useCategoryGroupQuery").mockReturnValue(
+            mockCategoryGroupQueryReturn
+        );
 
         // Mock the mutation hook
-        vi.spyOn(categoryGroupMutation, "useCategoryGroupMutation").mockReturnValue({
+        const mockCategoryGroupMutationReturn = {
             linkCategoriesAsync: mockLinkCategoriesAsync,
             deleteCategoryGroupMutation: vi.fn(),
             createCategoryGroupMutation: vi.fn(),
-        } as any);
+        } as unknown as ReturnType<typeof categoryGroupMutation.useCategoryGroupMutation>;
+
+        vi.spyOn(categoryGroupMutation, "useCategoryGroupMutation").mockReturnValue(
+            mockCategoryGroupMutationReturn
+        );
     });
 
     it("renders the two-panel layout with search", () => {
